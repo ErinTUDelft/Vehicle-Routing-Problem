@@ -28,12 +28,14 @@ k_max = 3   # maximum amount of drones
 for i in range(0,N):
   for j in range(0,N):
     for k in range(0,N):
-      x[i,j,k]=model.addVar(lb=0, ub=1, vtype=GRB.BINARY,name="x[%s,%s,%s]"%(i,j,k))
+      x[i,j,k]=model.addVar(lb=0, ub=1, vtype=GRB.BINARY,name="x[%s,%s,%s]"%(i,j,k)) # does vehicle k travel from i to j
 
 model.update()
       
 for i in range(0,N):
-  p[i]=model.addVar(lb=0, ub=1, vtype=GRB.CONTINUOUS,name="p[%s]"%(i))
+  p[i]=model.addVar(lb=0, ub=1, vtype=GRB.CONTINUOUS,name="p[%s]"%(i)) # amount of pesticide needed at each node
 
 model.update()
+
+
 
