@@ -19,7 +19,7 @@ x_max = 100 # width of the field
 y_max = 100 # length of the field
 rp_max = 10  # maximum amount of pesticide per node
 q_max = 5   # maximum amount of pesticide a drone can carry
-k_max = 3   # maximum amount of drones
+k_max = 3   # maximum number of drones
 
 
 #################
