@@ -17,7 +17,8 @@ from copy import deepcopy
 N = 10  # number of nodes
 x_max = 100 # width of the field
 y_max = 100 # length of the field
-p_max = 10  # maximum amount of pesticide per node
+rp_max = 10  # maximum amount of pesticide per node
+q_max = 5   # maximum amount of pesticide a drone can carry
 k_max = 3   # maximum amount of drones
 
 
@@ -30,13 +31,9 @@ for i in range(0,N):
     for k in range(0,k_max):
       x[i,j,k]=model.addVar(lb=0, ub=1, vtype=GRB.BINARY,name="x[%s,%s,%s]"%(i,j,k)) # does vehicle k travel from i to j
 model.update()
-      
-for i in range(0,N):
-  p[i]=model.addVar(lb=0, ub=1, vtype=GRB.CONTINUOUS,name="p[%s]"%(i)) # amount of pesticide needed at each node
-model.update()
 
 for i in range(0,N):
   for k in range(0,k_max):
-    q[i,k]=model.addVar(lb=0, ub=1, vtype=GRB.CONTINUOUS,name="q[%s,%s]"%(i,k)) # amount of pesticide drone k drops at node i
-    t[i,k]=model.addVar(lb=0, ub=1, vtype=GRB.CONTINUOUS,name="t[%s,%s]"%(i,k)) # time at which drone k gets at node i
+    q[i,k]=model.addVar(lb=0, ub=q_max, vtype=GRB.CONTINUOUS,name="q[%s,%s]"%(i,k)) # amount of pesticide drone k drops at node i
+    t[i,k]=model.addVar(lb=0, ub=10000, vtype=GRB.CONTINUOUS,name="t[%s,%s]"%(i,k)) # time at which drone k gets at node i
 model.update()
