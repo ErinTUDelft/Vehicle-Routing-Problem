@@ -18,4 +18,22 @@ N = 10  # number of nodes
 x_max = 100 # width of the field
 y_max = 100 # length of the field
 p_max = 10  # maximum amount of pesticide per node
+k_max = 3   # maximum amount of drones
+
+
+#################
+### VARIABLES ###
+#################
+
+for i in range(0,N):
+  for j in range(0,N):
+    for k in range(0,N):
+      x[i,j,k]=model.addVar(lb=0, ub=1, vtype=GRB.BINARY,name="x[%s,%s,%s]"%(i,j,k))
+
+model.update()
+      
+for i in range(0,N):
+  p[i]=model.addVar(lb=0, ub=1, vtype=GRB.CONTINUOUS,name="p[%s]"%(i))
+
+model.update()
 
