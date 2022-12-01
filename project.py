@@ -40,5 +40,5 @@ model.update()
 for i in range(0,N):
   for k in range(0,k_max):
     q[i,k]=model.addVar(lb=0, ub=1, vtype=GRB.CONTINUOUS,name="q[%s,%s]"%(i,k)) # amount of pesticide drone k drops at node i
-
+    t[i,k]=model.addVar(lb=0, ub=1, vtype=GRB.CONTINUOUS,name="t[%s,%s]"%(i,k)) # time at which drone k gets at node i
 model.update()
