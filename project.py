@@ -10,27 +10,43 @@ import numpy as np
 import os
 import pandas as pd
 import time
+import matplotlib.pyplot as plt
 from gurobipy import Model,GRB,LinExpr
 import pickle
 from copy import deepcopy
+from scipy.spatial import distance_matrix
 
 #################
 ### CONSTANTS ###
 #################
 
 N = 10  # number of nodes
-x_max = 100 # width of the field
-y_max = 100 # length of the field
+x_max = 500 # width of the field
+y_max = 500 # length of the field
+rp_min = 1  # minimum amount of pesticide per node [l]
 rp_max = 10 # maximum amount of pesticide per node [l]
 p_max = 5   # maximum amount of pesticide a drone can carry (tank_capacity) [l]
 refill_time = 10    # time it takes for a drone to fill up its tank [s]
-k_max = 3   # maximum number of drones
+k_max = 2   # maximum number of drones
 h_max = 3   # maximum number of trips
 flight_time = 1200  # maximum drone flight time [s]
 flight_speed = 8    # drone flight speed in [m/s]
 drop_rate = 0.1     # rate of pesticide spraying in [l/s]
 
 M = flight_time*3
+
+np.random.seed(0)
+X_pos = np.random.uniform(low=0, high=x_max, size=(N,))
+Y_pos = np.random.uniform(low=0, high=y_max, size=(N,))
+NODES = np.column_stack((X_pos,Y_pos))
+RP = np.random.uniform(low=rp_min, high=rp_max, size=(N,))
+
+d_matrix = distance_matrix(NODES, NODES)
+t = d_matrix/flight_speed
+
+plt.close(fig='all')
+plt.plot(X_pos[0],Y_pos[0], 'ro')
+plt.plot(X_pos[1:N],Y_pos[1:N], 'o')
 
 #################
 ### VARIABLES ###
@@ -73,7 +89,7 @@ for i in range(1,N):
         for h in range(0,h_max):
             LHS += p[i,k,h]
     cnstr_name = 'node_'+str(i)+'_satisfy_pesticide'
-    model.addConstr(LHS >= rp[i], name=cnstr_name)
+    model.addConstr(LHS >= RP[i], name=cnstr_name)
 
 # every trip between two nodes takes a set amount of time (or more)
 for i in range(0,N):
@@ -102,4 +118,3 @@ for k in range(0,k_max):
 ### COST FUNCTION ###
 #####################
 #stuff that needs to be done
-
