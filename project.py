@@ -25,10 +25,10 @@ x_max = 500 # width of the field
 y_max = 500 # length of the field
 rp_min = 1  # minimum amount of pesticide per node [l]
 rp_max = 1 # maximum amount of pesticide per node [l]
-p_max = 5   # maximum amount of pesticide a drone can carry (tank_capacity) [l]
+p_max = 2   # maximum amount of pesticide a drone can carry (tank_capacity) [l]
 refill_time = 10    # time it takes for a drone to fill up its tank [s]
 k_max = 1   # maximum number of drones
-h_max = 1   # maximum number of trips
+h_max = 2   # maximum number of trips
 flight_time = 1200  # maximum drone flight time [s]
 flight_speed = 6    # drone flight speed in [m/s]
 drop_rate = 0.1     # rate of pesticide spraying in [l/s]
@@ -101,9 +101,18 @@ for i in range(0,N):
                 if i!=j:
                     LHS += -M*x[i,j,k,h]
             LHS += p[i,k,h]
-    cnstr_name = 'drone_'+str(k)+'_can_drop_at_'+str(i)+'_in_trip_'+str(h)
-    model.addConstr(LHS <= 0, name=cnstr_name)
+            cnstr_name = 'drone_'+str(k)+'_can_drop_at_'+str(i)+'_in_trip_'+str(h)
+            model.addConstr(LHS <= 0, name=cnstr_name)
     
+# drone can carry a maximum amount of pesticide in one trip
+for k in range(0,k_max):
+    for h in range(0,h_max):
+        LHS = LinExpr()
+        for i in range(0,N):
+            LHS += p[i,k,h]
+        cnstr_name = 'drone_'+str(k)+'_can_carry_amount_of_pesticide_in_trip_'+str(h)
+        model.addConstr(LHS <= p_max, name=cnstr_name)
+
 # drone departs from 0
 for k in range(0,k_max):
     cnstr_name = 'drone_'+str(k)+'_starts_at_origin'
@@ -171,6 +180,7 @@ obj        = LinExpr()
 for k in range(0,k_max):
     for h in range(0,h_max):
         obj += arr[0,k,h]-dep[0,k,h]
+    obj += arr[0,k,h_max-1]
 model.setObjective(obj,GRB.MINIMIZE)
 model.update()
 
@@ -183,3 +193,43 @@ model.optimize()
 endTime   = time.time()
 
 solution = []
+
+'''
+# 
+h=0
+k=0
+for i in range(0,N):
+    for j in range(0,N):
+        if x[i,j,k,h].x>0.9:
+            print (x[i,j,k,h])
+'''
+
+k=0
+h=0
+i=0
+loop = True
+while loop:
+    if i==0:
+        print ('trip '+str(h))
+    for j in range(0,N):
+        if x[i,j,k,h].x>0.9:
+            print (dep[i,k,h])
+            print (arr[j,k,h])
+            i=j
+            if i==0:
+                h += 1
+                if h == h_max:
+                    loop = False
+                break
+
+
+for i in range(0,N):
+    for j in range(0,N):
+        if x[i,j,k,h].x>0.9:
+            print (arr[j,k,h])
+            
+            
+            for i_2 in range(0,N):
+                if x[j,i_2,k,h].x>0.9:
+                    print (dep[i_2,k,h])
+            
