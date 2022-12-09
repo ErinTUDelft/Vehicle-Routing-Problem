@@ -60,6 +60,10 @@ dep = {}
 a = {}
 
 model = Model()
+
+T=model.addVar(lb=0, vtype=GRB.CONTINUOUS,name="T") # Total time
+
+
 for i in range(0,N):
     for j in range(0,N):
         for k in range(0,k_max):
@@ -181,6 +185,10 @@ for k in range(0,k_max):
         LHS -= a[k,h]
         cnstr_name = 'drone_'+str(k)+'_must_return_to_depot_in_trip'+str(h)
         model.addConstr(LHS == 0, name=cnstr_name)
+        
+# total time variable
+for k in range(0,k_max):
+    model.addConstr(T - arr[0,k,h_max-1] >= 0, name='Total_time')
 
 model.update()
 
@@ -192,6 +200,8 @@ for k in range(0,k_max):
     # for h in range(0,h_max):
     #     obj += arr[0,k,h]-dep[0,k,h]
     obj += arr[0,k,h_max-1]
+    
+obj += T
 model.setObjective(obj,GRB.MINIMIZE)
 model.update()
 
@@ -232,6 +242,8 @@ for k in range(0,k_max):
             if x[i,j,k,h].x>0.9:
                 print ('\t'+str(dep[i,k,h]))
                 print ('\t'+str(arr[j,k,h]))
+                print ('\t\tleaves {amt:1.1f}/{tot:1.1f}'.format(amt = p[j,k,h].x, tot = RP[j]))
+            
                 i=j
                 if i==0:
                     h += 1
