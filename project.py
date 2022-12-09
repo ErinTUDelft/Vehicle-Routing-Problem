@@ -24,15 +24,15 @@ N = 5  # number of nodes
 x_max = 500 # width of the field
 y_max = 500 # length of the field
 rp_min = 1  # minimum amount of pesticide per node [l]
-rp_max = 1 # maximum amount of pesticide per node [l]
+rp_max = 10 # maximum amount of pesticide per node [l]
 p_max = 2   # maximum amount of pesticide a drone can carry (tank_capacity) [l]
 refill_time = 10    # time it takes for a drone to fill up its tank [s]
-k_max = 1   # maximum number of drones
-h_max = 2   # maximum number of trips
+k_max = 2   # maximum number of drones
 flight_time = 1200  # maximum drone flight time [s]
 flight_speed = 6    # drone flight speed in [m/s]
 drop_rate = 0.1     # rate of pesticide spraying in [l/s]
 
+h_max = np.ceil((rp_max*(N-1))/(p_max*k_max)).astype(int)   # maximum number of trips
 M = flight_time*3
 
 np.random.seed(0)
@@ -205,31 +205,23 @@ for i in range(0,N):
 '''
 
 k=0
-h=0
-i=0
-loop = True
-while loop:
-    if i==0:
-        print ('trip '+str(h))
-    for j in range(0,N):
-        if x[i,j,k,h].x>0.9:
-            print (dep[i,k,h])
-            print (arr[j,k,h])
-            i=j
-            if i==0:
-                h += 1
-                if h == h_max:
-                    loop = False
-                break
-
-
-for i in range(0,N):
-    for j in range(0,N):
-        if x[i,j,k,h].x>0.9:
-            print (arr[j,k,h])
+for k in range(0,k_max):
+    print ('\n---------- DRONE '+str(k)+' ----------')
+    h=0
+    i=0
+    loop = True
+    while loop:
+        if h == h_max or a[k,h].x < 0.1:
+            break
+        if i==0:
+            print ('Trip '+str(h))
             
-            
-            for i_2 in range(0,N):
-                if x[j,i_2,k,h].x>0.9:
-                    print (dep[i_2,k,h])
+        for j in range(0,N):
+            if x[i,j,k,h].x>0.9:
+                print ('\t'+str(dep[i,k,h]))
+                print ('\t'+str(arr[j,k,h]))
+                i=j
+                if i==0:
+                    h += 1
+                    break
             
