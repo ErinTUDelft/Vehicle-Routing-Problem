@@ -25,7 +25,7 @@ x_max = 500 # width of the field
 y_max = 500 # length of the field
 rp_min = 1  # minimum amount of pesticide per node [l]
 rp_max = 10 # maximum amount of pesticide per node [l]
-p_max = 2   # maximum amount of pesticide a drone can carry (tank_capacity) [l]
+p_max = 6   # maximum amount of pesticide a drone can carry (tank_capacity) [l]
 refill_time = 10    # time it takes for a drone to fill up its tank [s]
 k_max = 2   # maximum number of drones
 flight_time = 1200  # maximum drone flight time [s]
@@ -139,6 +139,17 @@ for k in range(0,k_max):
     for h in range(1,h_max):
         cnstr_name = 'refill_time_drone'+str(k)+'_trip'+str(h)
         model.addConstr(arr[0,k,h-1] - dep[0,k,h] + refill_time*a[k,h] <= 0, name=cnstr_name)
+
+
+for k in range(0,k_max):
+    for h in range(1,h_max):
+        cnstr_name = 'for_drone_'+str(k)+'_for_trip_'+str(h)+'_to_happen_trip_'+str(h-1)+'_must_happen'
+        model.addConstr(a[k,h-1] - a[k,h]>= 0, name=cnstr_name)
+
+for k in range(0,k_max):
+    for h in range(0,h_max):
+        cnstr_name = 'drone_'+str(k)+'_must_arrive_at_origin_after_it_leaves_it_in_trip_'+str(h)
+        model.addConstr(dep[0,k,h] - arr[0,k,h] <= 0, name=cnstr_name)
         
 # if you go to a node you must leave the node
 for k in range(0,k_max):
@@ -178,8 +189,8 @@ model.update()
 #####################
 obj        = LinExpr() 
 for k in range(0,k_max):
-    for h in range(0,h_max):
-        obj += arr[0,k,h]-dep[0,k,h]
+    # for h in range(0,h_max):
+    #     obj += arr[0,k,h]-dep[0,k,h]
     obj += arr[0,k,h_max-1]
 model.setObjective(obj,GRB.MINIMIZE)
 model.update()
@@ -189,6 +200,7 @@ model.update()
 ### SOLVING ###
 ###############
 model.write('model_formulation.lp')  
+model.Params.TimeLimit = 180
 model.optimize()
 endTime   = time.time()
 
