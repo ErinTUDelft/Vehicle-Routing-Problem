@@ -20,15 +20,15 @@ from scipy.spatial import distance_matrix
 ### CONSTANTS ###
 #################
 
-N = 10  # number of nodes
+N = 5  # number of nodes
 x_max = 500 # width of the field
 y_max = 500 # length of the field
 rp_min = 1  # minimum amount of pesticide per node [l]
-rp_max = 10 # maximum amount of pesticide per node [l]
+rp_max = 1 # maximum amount of pesticide per node [l]
 p_max = 5   # maximum amount of pesticide a drone can carry (tank_capacity) [l]
 refill_time = 10    # time it takes for a drone to fill up its tank [s]
-k_max = 2   # maximum number of drones
-h_max = 3   # maximum number of trips
+k_max = 1   # maximum number of drones
+h_max = 1   # maximum number of trips
 flight_time = 1200  # maximum drone flight time [s]
 flight_speed = 6    # drone flight speed in [m/s]
 drop_rate = 0.1     # rate of pesticide spraying in [l/s]
@@ -40,6 +40,7 @@ X_pos = np.random.uniform(low=0, high=x_max, size=(N,))
 Y_pos = np.random.uniform(low=0, high=y_max, size=(N,))
 NODES = np.column_stack((X_pos,Y_pos))
 RP = np.random.uniform(low=rp_min, high=rp_max, size=(N,))
+RP[0] = 0
 
 d_matrix = distance_matrix(NODES, NODES)
 t = d_matrix/flight_speed
@@ -90,6 +91,23 @@ for i in range(1,N):
             LHS += p[i,k,h]
     cnstr_name = 'node_'+str(i)+'_satisfy_pesticide'
     model.addConstr(LHS >= RP[i], name=cnstr_name)
+    
+# you can only drop pesticide if the drone visits the node (checked if the drone departs from the node)
+for i in range(0,N):
+    for k in range(0,k_max):
+        for h in range(0,h_max):
+            LHS = LinExpr()
+            for j in range(0,N):
+                if i!=j:
+                    LHS += -M*x[i,j,k,h]
+            LHS += p[i,k,h]
+    cnstr_name = 'drone_'+str(k)+'_can_drop_at_'+str(i)+'_in_trip_'+str(h)
+    model.addConstr(LHS <= 0, name=cnstr_name)
+    
+# drone departs from 0
+for k in range(0,k_max):
+    cnstr_name = 'drone_'+str(k)+'_starts_at_origin'
+    model.addConstr(dep[0,k,0] == 0, name=cnstr_name)
 
 # every trip between two nodes takes a set amount of time (or more)
 for i in range(0,N):
@@ -105,7 +123,7 @@ for i in range(1,N):
     for k in range(0,k_max):
         for h in range(0,h_max):
             cnstr_name = 'drop_time_node'+str(i)+'_drone'+str(k)+'_trip'+str(h)
-            model.addConstr(arr[i,k,h] + drop_rate*p[i,k,h] - dep[i,k,h] == 0, name=cnstr_name)
+            model.addConstr(arr[i,k,h] + p[i,k,h]/drop_rate - dep[i,k,h] == 0, name=cnstr_name)
             
 # drone takes an amount of time to refill
 for k in range(0,k_max):
@@ -114,17 +132,35 @@ for k in range(0,k_max):
         model.addConstr(arr[0,k,h-1] - dep[0,k,h] + refill_time*a[k,h] <= 0, name=cnstr_name)
         
 # if you go to a node you must leave the node
-
 for k in range(0,k_max):
     for h in range(0,h_max):
-        LHS = LinExpr()
         for i in range(0,N):
+            LHS = LinExpr()
             for j in range(0,N):
                 if i!=j:
                     LHS += x[i,j,k,h]-x[j,i,k,h]
-        cnstr_name = 'drone_must_leave_'+str(i)+'_if_it_travels_there'
-        model.addConstr(LHS <= 0, name=cnstr_name)
+            cnstr_name = 'drone_'+str(k)+'_must_leave_'+str(i)+'_if_it_travels_there'
+            model.addConstr(LHS == 0, name=cnstr_name)
         
+# if active during a trip vehicle must leave the depot once
+for k in range(0,k_max):
+    for h in range(0,h_max):
+        LHS = LinExpr()
+        for j in range(1,N):
+            LHS += x[0,j,k,h]
+        LHS -= a[k,h]
+        cnstr_name = 'drone_'+str(k)+'_must_leave_depot_in_trip'+str(h)
+        model.addConstr(LHS == 0, name=cnstr_name)
+
+# if active during a trip vehicle must go to depot once
+for k in range(0,k_max):
+    for h in range(0,h_max):
+        LHS = LinExpr()
+        for i in range(1,N):
+            LHS += x[i,0,k,h]
+        LHS -= a[k,h]
+        cnstr_name = 'drone_'+str(k)+'_must_return_to_depot_in_trip'+str(h)
+        model.addConstr(LHS == 0, name=cnstr_name)
 
 model.update()
 
@@ -135,7 +171,6 @@ obj        = LinExpr()
 for k in range(0,k_max):
     for h in range(0,h_max):
         obj += arr[0,k,h]-dep[0,k,h]
-
 model.setObjective(obj,GRB.MINIMIZE)
 model.update()
 
