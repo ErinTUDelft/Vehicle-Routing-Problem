@@ -24,30 +24,44 @@ N = 5  # number of nodes
 x_max = 500 # width of the field
 y_max = 500 # length of the field
 rp_min = 1  # minimum amount of pesticide per node [l]
-rp_max = 10 # maximum amount of pesticide per node [l]
-p_max = 6   # maximum amount of pesticide a drone can carry (tank_capacity) [l]
-refill_time = 10    # time it takes for a drone to fill up its tank [s]
-k_max = 2   # maximum number of drones
+rp_max = 20 # maximum amount of pesticide per node [l]
+p_max = 10   # maximum amount of pesticide a drone can carry (tank_capacity) [l]
+refill_time = 30    # time it takes for a drone to fill up its tank [s]
+k_max = 3   # maximum number of drones
 flight_time = 1200  # maximum drone flight time [s]
 flight_speed = 6    # drone flight speed in [m/s]
 drop_rate = 0.1     # rate of pesticide spraying in [l/s]
 
-h_max = np.ceil((rp_max*(N-1))/(p_max*k_max)).astype(int)   # maximum number of trips
+
 M = flight_time*3
 
-np.random.seed(0)
+np.random.seed(1)
 X_pos = np.random.uniform(low=0, high=x_max, size=(N,))
 Y_pos = np.random.uniform(low=0, high=y_max, size=(N,))
 NODES = np.column_stack((X_pos,Y_pos))
 RP = np.random.uniform(low=rp_min, high=rp_max, size=(N,))
 RP[0] = 0
+RP_TOT = np.sum(RP)
+h_max = np.ceil((RP_TOT/(p_max*k_max))).astype(int)   # maximum number of trips
 
 d_matrix = distance_matrix(NODES, NODES)
 t = d_matrix/flight_speed
 
-plt.close(fig='all')
-plt.plot(X_pos[0],Y_pos[0], 'ro')
-plt.plot(X_pos[1:N],Y_pos[1:N], 'o')
+
+
+
+
+fig, ax = plt.subplots()
+#ax.scatter(X_pos, Y_pos)
+ax.plot(X_pos[0],Y_pos[0], 'ro')
+ax.plot(X_pos[1:N],Y_pos[1:N], 'o')
+plt.xlim((0,x_max))
+plt.ylim((0,y_max))
+
+for i in range(0,N):
+    ax.annotate(str(i), (X_pos[i]+3, Y_pos[i]))
+
+
 
 #################
 ### VARIABLES ###
@@ -144,12 +158,13 @@ for k in range(0,k_max):
         cnstr_name = 'refill_time_drone'+str(k)+'_trip'+str(h)
         model.addConstr(arr[0,k,h-1] - dep[0,k,h] + refill_time*a[k,h] <= 0, name=cnstr_name)
 
-
+# for each drone k, for trip h to happen trip h-1 must also have happened
 for k in range(0,k_max):
     for h in range(1,h_max):
         cnstr_name = 'for_drone_'+str(k)+'_for_trip_'+str(h)+'_to_happen_trip_'+str(h-1)+'_must_happen'
         model.addConstr(a[k,h-1] - a[k,h]>= 0, name=cnstr_name)
 
+# the end of a trip is always after its beginning (even if it doesn't happen), otherwise the beginning of a non-happening trip could be at time 0
 for k in range(0,k_max):
     for h in range(0,h_max):
         cnstr_name = 'drone_'+str(k)+'_must_arrive_at_origin_after_it_leaves_it_in_trip_'+str(h)
@@ -163,7 +178,7 @@ for k in range(0,k_max):
             for j in range(0,N):
                 if i!=j:
                     LHS += x[i,j,k,h]-x[j,i,k,h]
-            cnstr_name = 'drone_'+str(k)+'_must_leave_'+str(i)+'_if_it_travels_there'
+            cnstr_name = 'in_trip_'+str(h)+'_drone_'+str(k)+'_must_leave_'+str(i)+'_if_it_travels_there'
             model.addConstr(LHS == 0, name=cnstr_name)
         
 # if active during a trip vehicle must leave the depot once
@@ -210,7 +225,7 @@ model.update()
 ### SOLVING ###
 ###############
 model.write('model_formulation.lp')  
-model.Params.TimeLimit = 180
+model.Params.TimeLimit = 60
 model.optimize()
 endTime   = time.time()
 
@@ -227,8 +242,9 @@ for i in range(0,N):
 '''
 
 k=0
+D=0
 for k in range(0,k_max):
-    print ('\n---------- DRONE '+str(k)+' ----------')
+    print ('\n########### DRONE '+str(k)+' ###########')
     h=0
     i=0
     loop = True
@@ -236,16 +252,29 @@ for k in range(0,k_max):
         if h == h_max or a[k,h].x < 0.1:
             break
         if i==0:
-            print ('Trip '+str(h))
+            print (f'Trip {h}:')
             
         for j in range(0,N):
             if x[i,j,k,h].x>0.9:
-                print ('\t'+str(dep[i,k,h]))
-                print ('\t'+str(arr[j,k,h]))
-                print ('\t\tleaves {amt:1.1f}/{tot:1.1f}'.format(amt = p[j,k,h].x, tot = RP[j]))
-            
+                
+                print ('\tfrom {depN:2d}: {dept:6.1f}s'.format(dept = dep[i,k,h].x, depN = i))                
+                print ('\t  to {arrN:2d}: {arrt:6.1f}s'.format(arrt = arr[j,k,h].x, arrN = j))                
+                print ('\t\t\tDrops {amt:2.1f}/{tot:2.1f}\n'.format(amt = p[j,k,h].x, tot = RP[j]))
+                D += p[j,k,h].x
                 i=j
                 if i==0:
                     h += 1
+                    print (f'---- Dropped {D:2.1f}/{p_max:2.1f} ----\n')
+                    D=0
                     break
-            
+                
+print ('\n---------- NODE FULFILMENT ----------')            
+for i in range(0,N):
+    P = 0
+    for k in range(0,k_max):
+        for h in range(0,h_max):
+            P += p[i,k,h].x
+    if abs(P-RP[i])>0.05:
+        print('!! demand not satisfied !!')
+    print (f'Node {i}')
+    print ('\tDropped {drp:2.1f}/{tot:2.1f}\n'.format(drp = P , tot = RP[i]))
