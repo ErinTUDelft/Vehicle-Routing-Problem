@@ -30,7 +30,7 @@ refill_time = 10    # time it takes for a drone to fill up its tank [s]
 k_max = 2   # maximum number of drones
 h_max = 3   # maximum number of trips
 flight_time = 1200  # maximum drone flight time [s]
-flight_speed = 8    # drone flight speed in [m/s]
+flight_speed = 6    # drone flight speed in [m/s]
 drop_rate = 0.1     # rate of pesticide spraying in [l/s]
 
 M = flight_time*3
@@ -105,16 +105,46 @@ for i in range(1,N):
     for k in range(0,k_max):
         for h in range(0,h_max):
             cnstr_name = 'drop_time_node'+str(i)+'_drone'+str(k)+'_trip'+str(h)
-            model.addConstr(arr[i,k,h] + drop_rate*p[i,k,h] - dep[i,k,h] <= 0, name=cnstr_name)
+            model.addConstr(arr[i,k,h] + drop_rate*p[i,k,h] - dep[i,k,h] == 0, name=cnstr_name)
             
 # drone takes an amount of time to refill
 for k in range(0,k_max):
     for h in range(1,h_max):
         cnstr_name = 'refill_time_drone'+str(k)+'_trip'+str(h)
-        model.addConstr(arr[0,k,h-1] - dep[0,k,h] + refill_time -  M*(1-a[k,h]) <= 0, name=cnstr_name)
+        model.addConstr(arr[0,k,h-1] - dep[0,k,h] + refill_time*a[k,h] <= 0, name=cnstr_name)
+        
+# if you go to a node you must leave the node
 
+for k in range(0,k_max):
+    for h in range(0,h_max):
+        LHS = LinExpr()
+        for i in range(0,N):
+            for j in range(0,N):
+                if i!=j:
+                    LHS += x[i,j,k,h]-x[j,i,k,h]
+        cnstr_name = 'drone_must_leave_'+str(i)+'_if_it_travels_there'
+        model.addConstr(LHS <= 0, name=cnstr_name)
+        
+
+model.update()
 
 #####################
 ### COST FUNCTION ###
 #####################
-#stuff that needs to be done
+obj        = LinExpr() 
+for k in range(0,k_max):
+    for h in range(0,h_max):
+        obj += arr[0,k,h]-dep[0,k,h]
+
+model.setObjective(obj,GRB.MINIMIZE)
+model.update()
+
+
+###############
+### SOLVING ###
+###############
+model.write('model_formulation.lp')  
+model.optimize()
+endTime   = time.time()
+
+solution = []
