@@ -15,16 +15,17 @@ from gurobipy import Model,GRB,LinExpr
 import pickle
 from copy import deepcopy
 from scipy.spatial import distance_matrix
+from matplotlib import animation
 
 #################
 ### CONSTANTS ###
 #################
 
-N = 5  # number of nodes
+N = 9  # number of nodes
 x_max = 500 # width of the field
 y_max = 500 # length of the field
 rp_min = 1  # minimum amount of pesticide per node [l]
-rp_max = 20 # maximum amount of pesticide per node [l]
+rp_max = 13 # maximum amount of pesticide per node [l]
 p_max = 10   # maximum amount of pesticide a drone can carry (tank_capacity) [l]
 refill_time = 30    # time it takes for a drone to fill up its tank [s]
 k_max = 3   # maximum number of drones
@@ -35,7 +36,7 @@ drop_rate = 0.1     # rate of pesticide spraying in [l/s]
 
 M = flight_time*3
 
-np.random.seed(1)
+np.random.seed(5)
 X_pos = np.random.uniform(low=0, high=x_max, size=(N,))
 Y_pos = np.random.uniform(low=0, high=y_max, size=(N,))
 NODES = np.column_stack((X_pos,Y_pos))
@@ -51,15 +52,15 @@ t = d_matrix/flight_speed
 
 
 
-fig, ax = plt.subplots()
-#ax.scatter(X_pos, Y_pos)
-ax.plot(X_pos[0],Y_pos[0], 'ro')
-ax.plot(X_pos[1:N],Y_pos[1:N], 'o')
-plt.xlim((0,x_max))
-plt.ylim((0,y_max))
+# fig, ax = plt.subplots()
+# #ax.scatter(X_pos, Y_pos)
+# ax.plot(X_pos[0],Y_pos[0], 'ro')
+# ax.plot(X_pos[1:N],Y_pos[1:N], 'o')
+# plt.xlim((0,x_max))
+# plt.ylim((0,y_max))
 
-for i in range(0,N):
-    ax.annotate(str(i), (X_pos[i]+3, Y_pos[i]))
+# for i in range(0,N):
+#     ax.annotate(str(i), (X_pos[i]+3, Y_pos[i]))
 
 
 
@@ -225,7 +226,7 @@ model.update()
 ### SOLVING ###
 ###############
 model.write('model_formulation.lp')  
-model.Params.TimeLimit = 60
+model.Params.TimeLimit = 3600
 model.optimize()
 endTime   = time.time()
 
@@ -278,3 +279,101 @@ for i in range(0,N):
         print('!! demand not satisfied !!')
     print (f'Node {i}')
     print ('\tDropped {drp:2.1f}/{tot:2.1f}\n'.format(drp = P , tot = RP[i]))
+
+
+'''
+stuff Pietro is trying for animations
+'''
+class Trip:
+    def __init__(self,drone,trip_n):
+        self.drone = drone
+        self.trip_n = trip_n
+        self.nodes = []
+        self.node_t = []
+        self.node_X = []
+        self.node_Y = []
+        self.x = []
+        self.y = []
+        self.t = []
+    def __str__(self):
+        return f'Drone {self.drone}, trip {self.trip_n}'
+    def add_leg(self, i, j, dep, arr):
+        self.nodes.append(i)
+        self.nodes.append(j)
+        self.node_t.append(dep)
+        self.node_t.append(arr)
+    def calc_coord(self, nodesX, nodesY, steps, stoptime):
+        self.node_X = nodesX[self.nodes]
+        self.node_Y = nodesY[self.nodes]
+        self.t = np.linspace(0,stoptime,steps)
+        self.x = np.interp(self.t,self.node_t,self.node_X)
+        self.y = np.interp(self.t,self.node_t,self.node_Y)
+    
+k=0
+trip_list = []
+
+for k in range(0,k_max):
+    h=0
+    i=0
+    loop = True
+    while loop:
+        if h == h_max or a[k,h].x < 0.1:
+            break
+        if i==0:
+            trip_list.append(Trip(k,h))
+        for j in range(0,N):
+            if x[i,j,k,h].x>0.9:
+                trip_list[-1].add_leg(i, j, dep[i,k,h].x, arr[j,k,h].x)
+                i=j
+                if i==0:
+                    trip_list[-1].calc_coord(X_pos, Y_pos, 200, T.x+5)
+                    h += 1
+                    break
+                
+# Position Arrays
+t = trip_list[0].t
+x_pos_in_time = []
+y_pos_in_time = []
+complete_dataSet = []
+for i in range(len(trip_list)):
+    x_pos_in_time = trip_list[i].x
+    y_pos_in_time = trip_list[i].y
+    # Setting up Data Set for Animation
+    complete_dataSet.append(np.array([x_pos_in_time, y_pos_in_time]))  # Combining our position coordinates
+    
+numDataPoints = len(t)
+
+
+def animate_func(num):
+    ax.clear()  # Clears the figure to update the line, point,   
+                # title, and axes
+    # Updating Trajectory Line (num+1 due to Python indexing)
+    
+    ax.plot(X_pos[0],Y_pos[0], 'ro')
+    ax.plot(X_pos[1:N],Y_pos[1:N], 'x')
+    for i in range(0,N):
+        ax.annotate(str(i), (X_pos[i]+3, Y_pos[i]))
+    
+    for i in range(0,len(trip_list)):
+        dataSet = complete_dataSet[i]
+        # Adding trace
+        ax.plot(dataSet[0, :num+1], dataSet[1, :num+1], color=plt.cm.tab20(trip_list[i].drone))
+        # Updating Point Location 
+        ax.scatter(dataSet[0, num], dataSet[1, num], color=plt.cm.tab20(trip_list[i].drone), marker='o')
+
+    # Setting Axes Limits
+    ax.set_xlim(0, x_max)
+    ax.set_ylim(0, y_max)
+
+    # Adding Figure Labels
+    ax.set_xlabel('x')
+    ax.set_ylabel('y')
+
+# Plotting the Animation
+fig = plt.figure()
+ax = plt.axes()
+anim = animation.FuncAnimation(fig, animate_func, interval=100, frames=numDataPoints)
+
+f = r"C:\Users\Pietro Deligios\Desktop\animate_func.gif"
+writergif = animation.PillowWriter(fps=numDataPoints/6)
+anim.save(f, writer=writergif)
