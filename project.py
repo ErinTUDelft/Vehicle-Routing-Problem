@@ -36,7 +36,7 @@ drop_rate = 0.1     # rate of pesticide spraying in [l/s]
 
 M = flight_time*3
 
-np.random.seed(8)
+np.random.seed(1)
 X_pos = np.random.uniform(low=0, high=x_max, size=(N,))
 Y_pos = np.random.uniform(low=0, high=y_max, size=(N,))
 NODES = np.column_stack((X_pos,Y_pos))
@@ -226,7 +226,7 @@ model.update()
 ### SOLVING ###
 ###############
 model.write('model_formulation.lp')  
-model.Params.TimeLimit = 60
+model.Params.TimeLimit = 600
 model.optimize()
 endTime   = time.time()
 
@@ -389,7 +389,7 @@ def animate_func(num):
     ax.set_ylabel('y')
 
 # Plotting the Animation
-fig = plt.figure(dpi = 300)
+fig = plt.figure(dpi = 200)
 ax = plt.axes()
 anim = animation.FuncAnimation(fig, animate_func, interval=100, frames=steps)
 
