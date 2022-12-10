@@ -21,14 +21,14 @@ from matplotlib import animation
 ### CONSTANTS ###
 #################
 
-N = 9  # number of nodes
+N = 10  # number of nodes
 x_max = 500 # width of the field
 y_max = 500 # length of the field
 rp_min = 1  # minimum amount of pesticide per node [l]
 rp_max = 13 # maximum amount of pesticide per node [l]
 p_max = 10   # maximum amount of pesticide a drone can carry (tank_capacity) [l]
 refill_time = 30    # time it takes for a drone to fill up its tank [s]
-k_max = 3   # maximum number of drones
+k_max = 4   # maximum number of drones
 flight_time = 1200  # maximum drone flight time [s]
 flight_speed = 6    # drone flight speed in [m/s]
 drop_rate = 0.1     # rate of pesticide spraying in [l/s]
@@ -36,7 +36,7 @@ drop_rate = 0.1     # rate of pesticide spraying in [l/s]
 
 M = flight_time*3
 
-np.random.seed(5)
+np.random.seed(8)
 X_pos = np.random.uniform(low=0, high=x_max, size=(N,))
 Y_pos = np.random.uniform(low=0, high=y_max, size=(N,))
 NODES = np.column_stack((X_pos,Y_pos))
@@ -226,7 +226,7 @@ model.update()
 ### SOLVING ###
 ###############
 model.write('model_formulation.lp')  
-model.Params.TimeLimit = 3600
+model.Params.TimeLimit = 60
 model.optimize()
 endTime   = time.time()
 
@@ -288,6 +288,7 @@ class Trip:
     def __init__(self,drone,trip_n):
         self.drone = drone
         self.trip_n = trip_n
+        self.leg_n = 0
         self.nodes = []
         self.node_t = []
         self.node_X = []
@@ -302,6 +303,19 @@ class Trip:
         self.nodes.append(j)
         self.node_t.append(dep)
         self.node_t.append(arr)
+        self.leg_n += 1
+    def print_leg(self, leg):
+        depN = self.nodes[leg*2]
+        depT = self.node_t[leg*2]
+        arrN = self.nodes[leg*2+1]
+        arrT = self.node_t[leg*2+1]
+        print (f'\tfrom {depN:2d}: {depT:6.1f}s')                
+        print (f'\t  to {arrN:2d}: {arrT:6.1f}s')
+    def print_trip(self):
+        print(self)
+        for leg in range(self.leg_n):
+            self.print_leg(leg)
+            print()
     def calc_coord(self, nodesX, nodesY, steps, stoptime):
         self.node_X = nodesX[self.nodes]
         self.node_Y = nodesY[self.nodes]
@@ -311,6 +325,7 @@ class Trip:
     
 k=0
 trip_list = []
+steps = 300
 
 for k in range(0,k_max):
     h=0
@@ -326,9 +341,11 @@ for k in range(0,k_max):
                 trip_list[-1].add_leg(i, j, dep[i,k,h].x, arr[j,k,h].x)
                 i=j
                 if i==0:
-                    trip_list[-1].calc_coord(X_pos, Y_pos, 200, T.x+5)
+                    trip_list[-1].calc_coord(X_pos, Y_pos, steps, T.x+5)
                     h += 1
                     break
+# for i in range(len(trip_list)):
+#     trip_list[i].print_trip()
                 
 # Position Arrays
 t = trip_list[0].t
@@ -341,9 +358,6 @@ for i in range(len(trip_list)):
     # Setting up Data Set for Animation
     complete_dataSet.append(np.array([x_pos_in_time, y_pos_in_time]))  # Combining our position coordinates
     
-numDataPoints = len(t)
-
-
 def animate_func(num):
     ax.clear()  # Clears the figure to update the line, point,   
                 # title, and axes
@@ -354,12 +368,17 @@ def animate_func(num):
     for i in range(0,N):
         ax.annotate(str(i), (X_pos[i]+3, Y_pos[i]))
     
-    for i in range(0,len(trip_list)):
+    for i in range(len(trip_list)):
         dataSet = complete_dataSet[i]
         # Adding trace
-        ax.plot(dataSet[0, :num+1], dataSet[1, :num+1], color=plt.cm.tab20(trip_list[i].drone))
+        #ax.plot(dataSet[0, :num+1], dataSet[1, :num+1], color=plt.cm.tab20(trip_list[i].drone))
         # Updating Point Location 
         ax.scatter(dataSet[0, num], dataSet[1, num], color=plt.cm.tab20(trip_list[i].drone), marker='o')
+        if dataSet[0, num]!=X_pos[0] or dataSet[1, num]!=Y_pos[0]:
+            ax.annotate(f'D{trip_list[i].drone}-T{trip_list[i].trip_n}', (dataSet[0, num]+3, dataSet[1, num]-6))
+            ax.plot(dataSet[0, :num+1], dataSet[1, :num+1], color=plt.cm.tab20(trip_list[i].drone))
+        else:
+            ax.plot(dataSet[0, :num+1], dataSet[1, :num+1],':', color=plt.cm.tab20(trip_list[i].drone), zorder=-1, alpha=0.3)
 
     # Setting Axes Limits
     ax.set_xlim(0, x_max)
@@ -370,10 +389,11 @@ def animate_func(num):
     ax.set_ylabel('y')
 
 # Plotting the Animation
-fig = plt.figure()
+fig = plt.figure(dpi = 300)
 ax = plt.axes()
-anim = animation.FuncAnimation(fig, animate_func, interval=100, frames=numDataPoints)
+anim = animation.FuncAnimation(fig, animate_func, interval=100, frames=steps)
 
-f = r"C:\Users\Pietro Deligios\Desktop\animate_func.gif"
-writergif = animation.PillowWriter(fps=numDataPoints/6)
+f = r"animate_drones.gif"
+writergif = animation.PillowWriter(fps = steps/10)
+writergif.setup(fig,f)
 anim.save(f, writer=writergif)
