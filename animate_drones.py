@@ -17,7 +17,7 @@ def animate (trip_list, steps, node_list, x_max, y_max, U_max):
     for n in range(1,N):
         Node_x.append(node_list[n].coord[0])
         Node_y.append(node_list[n].coord[1])
-        c.append(plt.cm.YlOrRd((node_list[n].urgency*(255/U_max)).astype(int)))
+        c.append(plt.cm.RdYlGn((255-node_list[n].urgency*(255/U_max)).astype(int)))
         
     def animate_func(num):
         ax.clear()  # Clears the figure to update the line, point, title, and axes
