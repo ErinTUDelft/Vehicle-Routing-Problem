@@ -1,7 +1,6 @@
 # -*- coding: utf-8 -*-
 """
 Created on Thu Dec  1 11:59:20 2022
-
 @authors: Riccardo Barbaglia, Pietro Deligios, Erin Lucassen
 """
 
@@ -32,6 +31,8 @@ k_max = 4   # maximum number of drones
 flight_time = 1200  # maximum drone flight time [s]
 flight_speed = 6    # drone flight speed in [m/s]
 drop_rate = 0.1     # rate of pesticide spraying in [l/s]
+U_min = 1 #minimum urgency weighting factor
+U_max = 1000 #maximum urgency weighting factor
 
 
 M = flight_time*3
@@ -43,6 +44,8 @@ NODES = np.column_stack((X_pos,Y_pos))
 RP = np.random.uniform(low=rp_min, high=rp_max, size=(N,))
 RP[0] = 0
 RP_TOT = np.sum(RP)
+U = np.random.uniform(low=U_min, high=U_max, size=(N,))
+U[0] = 0 #origin has no urgency
 h_max = np.ceil((RP_TOT/(p_max*k_max))).astype(int)   # maximum number of trips
 
 d_matrix = distance_matrix(NODES, NODES)
@@ -73,6 +76,7 @@ p = {}
 arr = {}
 dep = {}
 a = {}
+Tcomp = {}
 
 model = Model()
 
@@ -96,7 +100,12 @@ for k in range(0,k_max):
     for h in range(0,h_max):
         a[k,h]=model.addVar(lb=0, ub=1, vtype=GRB.BINARY,name="a[%s,%s]"%(k,h)) # does drone k leave for trip h
 
+for i in range (1,N):
+    Tcomp[i] = model.addVar(lb=0, vtype=GRB.CONTINUOUS,name="Tcomp[%s]"%(i)) # Completion time of a node
+
 model.update()
+
+
 
 ###################
 ### CONSTRAINTS ###
@@ -204,9 +213,17 @@ for k in range(0,k_max):
         
 # total time variable
 for k in range(0,k_max):
-    model.addConstr(T - arr[0,k,h_max-1] >= 0, name='Total_time')
+    model.addConstr(T - arr[0,k,h_max-1] >= 0, name='Total_time_greater_than_final_time_of_drone'+str(k))
+
+
+#get the time at which a node i is satisfied
+for i in range (1,N):
+    for h in range(h_max):
+        for k in range(k_max):
+            model.addConstr(Tcomp[i] >= dep[i,k,h], name='Completion_time_node'+str(i))
 
 model.update()
+ 
 
 #####################
 ### COST FUNCTION ###
@@ -216,8 +233,42 @@ for k in range(0,k_max):
     # for h in range(0,h_max):
     #     obj += arr[0,k,h]-dep[0,k,h]
     obj += arr[0,k,h_max-1]
+
+#minimize completion time of node [i], with its urgency U[i] as weighting factor
+for i in range(1,N):
+    obj += U[i] * Tcomp[i] 
     
 obj += T
+
+##################
+### TEST START ###
+##################
+
+P1_min = 0   # minimum weighting factor for level-1 penalty
+P1_max = 50 # maximum weighting factor for level-1 penalty
+T1_min = 0 # minimum time limit for level-1 penalty
+T1_max = 0 # maximum time limit for level-1 penalty
+
+P2_min = 0   # minimum weighting factor for level-2 penalty
+P2_max = 100 # maximum weighting factor for level-2 penalty
+T2_min = 0 # minimum time limit for level-2 penalty
+T2_max = 0 # maximum time limit for level-2 penalty
+
+
+#randon generation of level-1 and 2 penalty factors for each node
+P1 = np.random.uniform(low=P1_min, high=P1_max, size=(N,))
+P1[0] = 0
+P2 = np.random.uniform(low=P2_min, high=P2_max, size=(N,))
+P2[0] = 0
+
+#random generation of completion time limits for each node
+T1 = np.random.uniform(low=T1_min, high=T1_max, size=(N,))
+T2 = np.random.uniform(low=T2_min, high=T2_max, size=(N,))
+
+################
+### TEST END ###
+################
+
 model.setObjective(obj,GRB.MINIMIZE)
 model.update()
 
@@ -226,7 +277,7 @@ model.update()
 ### SOLVING ###
 ###############
 model.write('model_formulation.lp')  
-model.Params.TimeLimit = 600
+model.Params.TimeLimit = 30
 model.optimize()
 endTime   = time.time()
 
@@ -279,6 +330,9 @@ for i in range(0,N):
         print('!! demand not satisfied !!')
     print (f'Node {i}')
     print ('\tDropped {drp:2.1f}/{tot:2.1f}\n'.format(drp = P , tot = RP[i]))
+    # if
+    #     print('\tUrgency {urg:2.1f}\n'.format(urg = U[i]))
+    #     print('\tCompletion time {comp:6.1f}s\n'.format(comp = Tcomp[i-1]))
 
 
 '''
