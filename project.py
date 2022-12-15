@@ -10,6 +10,7 @@ import time
 from gurobipy import Model,GRB,LinExpr
 from scipy.spatial import distance_matrix
 import classes
+import animate_drones
 
 #################
 ### CONSTANTS ###
@@ -35,7 +36,7 @@ M = flight_time*3
 np.random.seed(1)
 X_pos = np.random.uniform(low=0, high=x_max, size=(N,))
 Y_pos = np.random.uniform(low=0, high=y_max, size=(N,))
-NODES = np.column_stack((X_pos,Y_pos))
+Node_coords = np.column_stack((X_pos,Y_pos))
 RP = np.random.uniform(low=rp_min, high=rp_max, size=(N,))
 RP[0] = 0
 RP_TOT = np.sum(RP)
@@ -43,7 +44,7 @@ U = np.random.uniform(low=U_min, high=U_max, size=(N,))
 U[0] = 0 #origin has no urgency
 h_max = np.ceil((RP_TOT/(p_max*k_max))).astype(int)   # maximum number of trips
 
-d_matrix = distance_matrix(NODES, NODES)
+d_matrix = distance_matrix(Node_coords, Node_coords)
 t = d_matrix/flight_speed
 
 
@@ -272,7 +273,7 @@ model.update()
 ### SOLVING ###
 ###############
 model.write('model_formulation.lp')  
-model.Params.TimeLimit = 30
+model.Params.TimeLimit = 300
 model.optimize()
 endTime   = time.time()
 
@@ -333,10 +334,15 @@ for i in range(0,N):
 '''
 stuff Pietro is trying for animations
 '''
-    
+
+node_list = []
+for n in range(N):
+    node_list.append(classes.Node(n,Node_coords[n,:],RP[n],U[n]))
+
 k=0
 trip_list = []
 steps = 300
+stop_time = T.x+10
 
 for k in range(0,k_max):
     h=0
@@ -350,10 +356,18 @@ for k in range(0,k_max):
         for j in range(0,N):
             if x[i,j,k,h].x>0.9:
                 trip_list[-1].add_leg(i, j, dep[i,k,h].x, arr[j,k,h].x)
+                node_list[j].add_drop(p[j,k,h].x, arr[j,k,h].x, dep[j,k,h].x, drop_rate)
                 i=j
+
                 if i==0:
-                    trip_list[-1].calc_coord(X_pos, Y_pos, steps, T.x+5)
+                    trip_list[-1].calc_coord(X_pos, Y_pos, steps, stop_time)
                     h += 1
                     break
 # for i in range(len(trip_list)):
 #     trip_list[i].print_trip()
+
+for n in range(N):
+    node_list[n].calc_amt(steps, stop_time)
+
+
+animate_drones.animate(trip_list, steps, node_list, x_max, y_max, U_max)
