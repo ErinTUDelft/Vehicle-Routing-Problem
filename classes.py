@@ -4,6 +4,7 @@ Created on Thu Dec 15 12:39:54 2022
 
 @authors: Riccardo Barbaglia, Pietro Deligios, Erin Lucassen
 """
+import numpy as np
 
 class Trip:
     def __init__(self,drone,trip_n):
