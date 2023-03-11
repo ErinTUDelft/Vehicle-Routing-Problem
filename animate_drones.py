@@ -4,11 +4,11 @@ Created on Thu Dec 15 11:36:09 2022
 
 @author: Pietro Deligios
 """
+import numpy as np
+import matplotlib.pyplot as plt
+from matplotlib import animation
+
 def animate (trip_list, steps, node_list, x_max, y_max, U_max):
-    import numpy as np
-    import matplotlib.pyplot as plt
-    from matplotlib import animation
-    
     # Position Arrays
     N = len(node_list)
     Node_x = []
