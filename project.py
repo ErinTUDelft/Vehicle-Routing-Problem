@@ -16,7 +16,23 @@ import animate_drones
 import pandas as pd
 
 
-def main(seed, Nodes, pesticide_max_node, pesticide_max_drone):
+def cb(model, where):
+    if where == GRB.Callback.MIPNODE:
+        # Get model objective
+        obj = model.cbGet(GRB.Callback.MIPNODE_OBJBST)
+
+        # Has objective changed?
+        if abs(obj - model._cur_obj) > 1e-8:
+            # If so, update incumbent and time
+            model._cur_obj = obj
+            model._time = time.time()
+
+    # Terminate if objective has not improved in 20s
+    if time.time() - model._time > 30:
+        model.terminate()
+
+
+def main(seed, Nodes, pesticide_max_node, pesticide_max_drone, max_num_drone):
 
     #################
     ### CONSTANTS ###
@@ -49,7 +65,7 @@ def main(seed, Nodes, pesticide_max_node, pesticide_max_drone):
     rp_min = 5 #,2,4,4  # minimum amount of pesticide per node [l]
     rp_max = pesticide_max_node # maximum amount of pesticide per node [l]
     p_max = pesticide_max_drone   # maximum amount of pesticide a drone can carry (tank_capacity) [l]
-    k_max = 4   # maximum number of drones
+    k_max = max_num_drone   # maximum number of drones
 
 
     M = flight_time*3
@@ -251,44 +267,57 @@ def main(seed, Nodes, pesticide_max_node, pesticide_max_drone):
     ###############
     model.write('model_formulation.lp')  
 
-    model.Params.TimeLimit = 25
-    model.optimize()
-    endTime   = time.time()
+    model.Params.TimeLimit = 300
+
+    model._cur_obj = float('inf')
+    model._time = time.time()
+
+
+    start_time = time.time()
+    model.optimize(callback = cb)
+    execution_time   = time.time() - start_time
+
+    gap_percentage = model.MIPGap*100
 
     #print('model', model.ObjVal)
 
-    return model.objVal 
+    return model.objVal, execution_time, gap_percentage
 
-num_seeds = 2
-num_nodes = [4,5]
-pesticide_max_node_list = [10,11]
-pesticide_max_drone_list = [5,6]
 
-total = 0
+"""
+You can change these if you want!
+"""
+num_seeds = 5
+num_nodes = [4,5,6,7]
+pesticide_max_node_list = [8,10,12,14]
+pesticide_max_drone_list = [5,7,9]
+max_num_drone_list = [3,4,5]
+
 
 # Create an empty DataFrame
-results_df = pd.DataFrame(columns=['Seed', 'Nodes', 'Pesticide_Max_Node', 'Pesticide_Max_Drone', 'Value'])
+results_df = pd.DataFrame(columns=['Nodes', 'Pesticide_Max_Node', 'Pesticide_Max_Drone', 'Max_num_drones' , 'Seed', 'Value', 'Gap', 'Time'])
 
+counter = 0
 for nodes in num_nodes:
-    for seed in range(num_seeds):
+    for pesticide_max_node in pesticide_max_node_list:
+        for pesticide_max_drone in pesticide_max_drone_list:
+            for max_num_drone in max_num_drone_list:
+                for seed in range(num_seeds):
+                    value, execution_time, gap_percentage = main(seed=seed, Nodes=nodes, pesticide_max_node=pesticide_max_node, pesticide_max_drone=pesticide_max_drone, max_num_drone=max_num_drone)
+                    print('Value is:', value)
 
-        # Append the results for the default parameter values
-        #results_df = results_df.append({'Seed': seed, 'Nodes': 'Default', 'Pesticide_Max_Node': 'Default',
-                           #             'Pesticide_Max_Drone': 'Default', 'Value': value}, ignore_index=True)
-
-        for pesticide_max_node in pesticide_max_node_list:
-            for pesticide_max_drone in pesticide_max_drone_list:
-                value = main(seed=seed, Nodes=nodes, pesticide_max_node=pesticide_max_node, pesticide_max_drone=pesticide_max_drone)
-                print('Value is:', value)
-                total += value
-
-                # Append the results for the specific parameter values
-                results_df = results_df.append({'Seed': seed, 'Nodes': nodes, 'Pesticide_Max_Node': pesticide_max_node,
-                                                'Pesticide_Max_Drone': pesticide_max_drone, 'Value': value}, ignore_index=True)
+                    counter += 1
+                    
+                    results_df = results_df.append({'Nodes': nodes, 'Pesticide_Max_Node': pesticide_max_node,
+                                                    'Pesticide_Max_Drone': pesticide_max_drone, 'Max_num_drones': max_num_drone, 'Seed': seed, 'Value': value, 'Gap': gap_percentage, 'Time': execution_time}, ignore_index=True)
+                    
+                    if counter % 20 == 0:
+                        filename = f"results_{counter}.csv"
+                        results_df.to_csv(filename, index=False)
 
 # Display the results DataFrameprint(results_df
                 print(results_df)
-print(results_df)
+print('Dataframe Final:' , results_df)
 
 
 solution = []
