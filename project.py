@@ -28,24 +28,24 @@ def cb(model, where):
             model._time = time.time()
 
     # Terminate if objective has not improved in 20s
-    if time.time() - model._time > 30:
+    if time.time() - model._time > 120:
         model.terminate()
 
 
-def main(seed, Nodes, pesticide_max_node, pesticide_max_drone, max_num_drone):
+def main(seed, Nodes, pesticide_max_node, refill_time, max_num_drone):
 
     #################
     ### CONSTANTS ###
     #################
 
     # Keep constant
-    x_max = 500 # width of the field
-    y_max = 500 # length of the field
+    x_max = 1000 # width of the field
+    y_max = 1000 # length of the field
     U_min = 1 #minimum urgency weighting factor
     U_max = 2 #maximum urgency weighting factor
     flight_speed = 6    # drone flight speed in [m/s]
     drop_rate = 0.1     # rate of pesticide spraying in [l/s]
-    refill_time = 30    # time it takes for a drone to fill up its tank [s]
+    #refill_time = 30    # time it takes for a drone to fill up its tank [s]
 
     """
     Consider removing
@@ -64,8 +64,9 @@ def main(seed, Nodes, pesticide_max_node, pesticide_max_drone, max_num_drone):
     # Grid search
     rp_min = 5 #,2,4,4  # minimum amount of pesticide per node [l]
     rp_max = pesticide_max_node # maximum amount of pesticide per node [l]
-    p_max = pesticide_max_drone   # maximum amount of pesticide a drone can carry (tank_capacity) [l]
+    p_max = 7   # maximum amount of pesticide a drone can carry (tank_capacity) [l]
     k_max = max_num_drone   # maximum number of drones
+    refill_time = refill_time
 
 
     M = flight_time*3
@@ -76,6 +77,11 @@ def main(seed, Nodes, pesticide_max_node, pesticide_max_drone, max_num_drone):
     X_pos = np.random.uniform(low=0, high=x_max, size=(N,))
     Y_pos = np.random.uniform(low=0, high=y_max, size=(N,))
     Node_coords = np.column_stack((X_pos,Y_pos))
+
+    Node_coords[0] = [500,500]
+    print(Node_coords)
+
+    
     RP = np.random.uniform(low=rp_min, high=rp_max, size=(N,))
     RP[0] = 0
     RP_TOT = np.sum(RP)
@@ -290,26 +296,28 @@ You can change these if you want!
 num_seeds = 5
 num_nodes = [4,5,6,7]
 pesticide_max_node_list = [8,10,12,14]
-pesticide_max_drone_list = [5,7,9]
+#pesticide_max_drone_list = [5,7,9]
+Refill_time_list = [30, 60, 90]
 max_num_drone_list = [3,4,5]
 
 
+
 # Create an empty DataFrame
-results_df = pd.DataFrame(columns=['Nodes', 'Pesticide_Max_Node', 'Pesticide_Max_Drone', 'Max_num_drones' , 'Seed', 'Value', 'Gap', 'Time'])
+results_df = pd.DataFrame(columns=['Nodes', 'Pesticide_Max_Node', 'Refill_time', 'Max_num_drones' , 'Seed', 'Value', 'Gap', 'Time'])
 
 counter = 0
 for nodes in num_nodes:
     for pesticide_max_node in pesticide_max_node_list:
-        for pesticide_max_drone in pesticide_max_drone_list:
+        for refill_time in Refill_time_list:
             for max_num_drone in max_num_drone_list:
                 for seed in range(num_seeds):
-                    value, execution_time, gap_percentage = main(seed=seed, Nodes=nodes, pesticide_max_node=pesticide_max_node, pesticide_max_drone=pesticide_max_drone, max_num_drone=max_num_drone)
+                    value, execution_time, gap_percentage = main(seed=seed, Nodes=nodes, pesticide_max_node=pesticide_max_node, refill_time = refill_time, max_num_drone=max_num_drone)
                     print('Value is:', value)
 
                     counter += 1
                     
                     results_df = results_df.append({'Nodes': nodes, 'Pesticide_Max_Node': pesticide_max_node,
-                                                    'Pesticide_Max_Drone': pesticide_max_drone, 'Max_num_drones': max_num_drone, 'Seed': seed, 'Value': value, 'Gap': gap_percentage, 'Time': execution_time}, ignore_index=True)
+                                                    'Refill_time': refill_time, 'Max_num_drones': max_num_drone, 'Seed': seed, 'Value': value, 'Gap': gap_percentage, 'Time': execution_time}, ignore_index=True)
                     
                     if counter % 20 == 0:
                         filename = f"results_{counter}.csv"
