@@ -66,3 +66,49 @@ def animate (trip_list, steps, node_list, x_max, y_max, U_max):
     writergif = animation.PillowWriter(fps = steps/10)
     writergif.setup(fig,f)
     anim.save(f, writer=writergif)
+    
+def plot(trip_list, node_list, x_max, y_max, U_max):
+    N = len(node_list)
+    Node_x = []
+    Node_y = []
+    
+    max_trips = 0
+    for i in range(len(trip_list)):
+        if trip_list[i].trip_n>max_trips:
+            max_trips = trip_list[i].trip_n
+    
+    c = []
+    for n in range(1,N):
+        Node_x.append(node_list[n].coord[0])
+        Node_y.append(node_list[n].coord[1])
+        c.append(plt.cm.RdYlGn((255-node_list[n].urgency*(255/U_max)).astype(int)))
+    
+    for h in range(max_trips):
+        ax = plt.axes()
+
+        # Plotting the nodes
+        ax.plot(node_list[0].coord[0], node_list[0].coord[1], 'ro')
+        ax.scatter(Node_x, Node_y, s=None, color = c)
+        for n in range(1,N):
+            ax.annotate(str(n), (node_list[n].coord[0]+3, node_list[n].coord[1]))            
+
+        for i in range(len(trip_list)):
+            if trip_list[i].trip_n==h:
+                clr = plt.cm.tab20(trip_list[i].drone)
+                for k in range(0, len(trip_list[i].node_X)-1, 2):
+                    plt.arrow(trip_list[i].node_X[k],
+                              trip_list[i].node_Y[k],
+                              trip_list[i].node_X[k+1]-trip_list[i].node_X[k],
+                              trip_list[i].node_Y[k+1]-trip_list[i].node_Y[k],
+                              color=clr, head_width = 15, length_includes_head = True)
+                        
+        # Setting Axes Limits
+        ax.set_xlim(0, x_max)
+        ax.set_ylim(0, y_max)
+    
+        # Adding Figure Labels
+        ax.set_xlabel('x')
+        ax.set_ylabel('y')
+        
+        name = 'trip_' + str(h) +'.png'
+        plt.savefig(name)
