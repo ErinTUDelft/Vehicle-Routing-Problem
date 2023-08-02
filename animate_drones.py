@@ -81,10 +81,18 @@ def plot(trip_list, node_list, x_max, y_max, U_max):
     for n in range(1,N):
         Node_x.append(node_list[n].coord[0])
         Node_y.append(node_list[n].coord[1])
-        c.append(plt.cm.RdYlGn((255-node_list[n].urgency*(255/U_max)).astype(int)))
+        c.append(plt.cm.RdYlGn((255-node_list[n].urgency*(255/2)).astype(int)))
     
-    for h in range(max_trips):
-        ax = plt.axes()
+    for h in range(max_trips+1):
+        fig = plt.figure(h)
+        ax = fig.gca()
+        # Setting Axes Limits
+        ax.set_xlim(0, x_max)
+        ax.set_ylim(0, y_max)
+    
+        # Adding Figure Labels
+        ax.set_xlabel('x')
+        ax.set_ylabel('y')
 
         # Plotting the nodes
         ax.plot(node_list[0].coord[0], node_list[0].coord[1], 'ro')
@@ -101,14 +109,6 @@ def plot(trip_list, node_list, x_max, y_max, U_max):
                               trip_list[i].node_X[k+1]-trip_list[i].node_X[k],
                               trip_list[i].node_Y[k+1]-trip_list[i].node_Y[k],
                               color=clr, head_width = 15, length_includes_head = True)
-                        
-        # Setting Axes Limits
-        ax.set_xlim(0, x_max)
-        ax.set_ylim(0, y_max)
-    
-        # Adding Figure Labels
-        ax.set_xlabel('x')
-        ax.set_ylabel('y')
         
         name = 'trip_' + str(h) +'.png'
-        plt.savefig(name)
+        plt.savefig(name, dpi=500)
