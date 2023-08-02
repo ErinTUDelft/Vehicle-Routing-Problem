@@ -10,7 +10,8 @@ import time
 from gurobipy import Model,GRB,LinExpr
 from scipy.spatial import distance_matrix
 import classes
-import animate_drones
+import pickle
+import os
 
 
 import pandas as pd
@@ -287,6 +288,48 @@ def main(seed, Nodes, pesticide_max_node, refill_time, max_num_drone):
 
     #print('model', model.ObjVal)
 
+    ##############
+    ### SAVING ###
+    ##############
+    
+    node_list = []
+    for n in range(N):
+        node_list.append(classes.Node(n,Node_coords[n,:],RP[n],U[n]))
+
+    k=0
+    trip_list = []
+    for k in range(0,k_max):
+        h=0
+        i=0
+        loop = True
+        while loop:
+            if h == h_max or a[k,h].x < 0.1:
+                break
+            if i==0:
+                trip_list.append(classes.Trip(k,h))
+            for j in range(0,N):
+                if x[i,j,k,h].x>0.9:
+                    trip_list[-1].add_leg(i, j, dep[i,k,h].x, arr[j,k,h].x)
+                    node_list[j].add_drop(p[j,k,h].x, arr[j,k,h].x, dep[j,k,h].x, drop_rate)
+                    i=j
+                    if i==0:
+                        h += 1
+                        break
+    
+    PATH = os.getcwd()
+    PATH += '\\Saved_solutions\\node_list'
+    PATH += '_seed' + str(seed) + '_nodes' + str(Nodes) + '_maxpest' + str(pesticide_max_node) + '_reft' + str(refill_time) + '_maxd' + str(max_num_drone)
+    PATH += '.pkl'
+    with open(PATH, 'wb') as f:
+        pickle.dump(node_list, f)
+        
+    PATH = os.getcwd()
+    PATH += '\\Saved_solutions\\trip_list'
+    PATH += '_seed' + str(seed) + '_nodes' + str(Nodes) + '_maxpest' + str(pesticide_max_node) + '_reft' + str(refill_time) + '_maxd' + str(max_num_drone)
+    PATH += '.pkl'
+    with open(PATH, 'wb') as f:
+        pickle.dump(trip_list, f)
+        
     return model.objVal, execution_time, gap_percentage
 
 
@@ -299,7 +342,6 @@ pesticide_max_node_list = [8,10,12,14]
 #pesticide_max_drone_list = [5,7,9]
 Refill_time_list = [30, 60, 90]
 max_num_drone_list = [3,4,5]
-
 
 
 # Create an empty DataFrame
@@ -380,60 +422,6 @@ for i in range(0,N):
     # if
     #     print('\tUrgency {urg:2.1f}\n'.format(urg = U[i]))
     #     print('\tCompletion time {comp:6.1f}s\n'.format(comp = Tcomp[i-1]))
-
-
-# '''
-# stuff Pietro is trying for animations
-# '''
-
-# node_list = []
-# for n in range(N):
-#     node_list.append(classes.Node(n,Node_coords[n,:],RP[n],U[n]))
-
-# k=0
-# trip_list = []
-# steps = 300
-# stop_time = T.x+10
-
-# for k in range(0,k_max):
-#     h=0
-#     i=0
-#     loop = True
-#     while loop:
-#         if h == h_max or a[k,h].x < 0.1:
-#             break
-#         if i==0:
-#             trip_list.append(classes.Trip(k,h))
-#         for j in range(0,N):
-#             if x[i,j,k,h].x>0.9:
-#                 trip_list[-1].add_leg(i, j, dep[i,k,h].x, arr[j,k,h].x)
-#                 node_list[j].add_drop(p[j,k,h].x, arr[j,k,h].x, dep[j,k,h].x, drop_rate)
-#                 i=j
-
-#                 if i==0:
-#                     trip_list[-1].calc_coord(X_pos, Y_pos, steps, stop_time)
-#                     h += 1
-#                     break
-# # for i in range(len(trip_list)):
-# #     trip_list[i].print_trip()
-
-# for n in range(N):
-#     node_list[n].calc_amt(steps, stop_time)
-
-
-# animate_drones.animate(trip_list, steps, node_list, x_max, y_max, U_max)
-
-
-
-# fig, ax = plt.subplots()
-# #ax.scatter(X_pos, Y_pos)
-# ax.plot(X_pos[0],Y_pos[0], 'ro')
-# ax.plot(X_pos[1:N],Y_pos[1:N], 'o')
-# plt.xlim((0,x_max))
-# plt.ylim((0,y_max))
-
-# for i in range(0,N):
-#     ax.annotate(str(i), (X_pos[i]+3, Y_pos[i]))
 
 ##################
 ### TEST START ###
