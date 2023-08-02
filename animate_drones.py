@@ -86,6 +86,7 @@ def plot(trip_list, node_list, x_max, y_max, U_max):
     for h in range(max_trips+1):
         fig = plt.figure(h)
         ax = fig.gca()
+        ax.clear()
         # Setting Axes Limits
         ax.set_xlim(0, x_max)
         ax.set_ylim(0, y_max)
@@ -103,11 +104,15 @@ def plot(trip_list, node_list, x_max, y_max, U_max):
         for i in range(len(trip_list)):
             if trip_list[i].trip_n==h:
                 clr = plt.cm.tab20(trip_list[i].drone)
+                offset = 2+np.random.uniform(low=0, high=3)
                 for k in range(0, len(trip_list[i].node_X)-1, 2):
-                    plt.arrow(trip_list[i].node_X[k],
-                              trip_list[i].node_Y[k],
-                              trip_list[i].node_X[k+1]-trip_list[i].node_X[k],
-                              trip_list[i].node_Y[k+1]-trip_list[i].node_Y[k],
+                    dx = trip_list[i].node_X[k+1]-trip_list[i].node_X[k]
+                    dy = trip_list[i].node_Y[k+1]-trip_list[i].node_Y[k]
+                    l = np.sqrt(pow(dx, 2)+pow(dy, 2))
+                    plt.arrow(trip_list[i].node_X[k]+offset*dy/l,
+                              trip_list[i].node_Y[k]-offset*dx/l,
+                              dx+offset*dy/l,
+                              dy-offset*dx/l,
                               color=clr, head_width = 15, length_includes_head = True)
         
         name = 'trip_' + str(h) +'.png'

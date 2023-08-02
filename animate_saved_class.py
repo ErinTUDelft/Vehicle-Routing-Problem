@@ -7,11 +7,11 @@ import animate_drones
 x_max = 1000 # width of the field
 y_max = 1000 # length of the field
 
-seed = 0
+seed = 4
 nodes = 4
-pesticide_max_node = 8
-refill_time = 30
-max_num_drone = 3
+pesticide_max_node = 10
+refill_time = 60
+max_num_drone = 4
 
 PATH = os.getcwd()
 PATH += '\\Saved_solutions\\node_list'
@@ -40,5 +40,7 @@ for i in range(len(trip_list)):
     trip_list[i].calc_coord(X_pos, Y_pos, steps, stop_time)
     # trip_list[i].print_trip()
 
+print('generating gif')
 animate_drones.animate(trip_list, steps, node_list, x_max, y_max, 2)
+print('generating plots')
 animate_drones.plot(trip_list, node_list, x_max, y_max, 2)
