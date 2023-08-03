@@ -95,7 +95,7 @@ def main(seed, Nodes, pesticide_max_node, refill_time, max_num_drone):
 
     model = Model()
 
-    T=model.addVar(lb=0, vtype=GRB.CONTINUOUS,name="T") # Total time
+    #T=model.addVar(lb=0, vtype=GRB.CONTINUOUS,name="T") # Total time
 
     for i in range(0,N):
         for j in range(0,N):
@@ -224,8 +224,8 @@ def main(seed, Nodes, pesticide_max_node, refill_time, max_num_drone):
             model.addConstr(LHS == 0, name=cnstr_name)
             
     # total time variable
-    for k in range(0,k_max):
-        model.addConstr(T - arr[0,k,h_max-1] >= 0, name='Total_time_greater_than_final_time_of_drone'+str(k))
+    #for k in range(0,k_max):
+    #    model.addConstr(T - arr[0,k,h_max-1] >= 0, name='Total_time_greater_than_final_time_of_drone'+str(k))
 
     # get the time at which a node i is satisfied
     for i in range (1,N):
@@ -282,6 +282,7 @@ def main(seed, Nodes, pesticide_max_node, refill_time, max_num_drone):
 
     k=0
     max_trips = 0
+    final_time = 0
     trip_list = []
     for k in range(0,k_max):
         h=0
@@ -289,11 +290,14 @@ def main(seed, Nodes, pesticide_max_node, refill_time, max_num_drone):
         loop = True
         while loop:
             if h == h_max or a[k,h].x < 0.1:
+                if arr[0,k,h-1].x>final_time:
+                    final_time = arr[0,k,h-1].x
                 if h>max_trips:
                     max_trips = h
                 break
             if i==0:
                 trip_list.append(classes.Trip(k,h))
+            
             for j in range(0,N):
                 if x[i,j,k,h].x>0.9:
                     trip_list[-1].add_leg(i, j, dep[i,k,h].x, arr[j,k,h].x)
@@ -319,7 +323,7 @@ def main(seed, Nodes, pesticide_max_node, refill_time, max_num_drone):
         
     
         
-    return model.objVal, execution_time, gap_percentage, T.x, max_trips
+    return model.objVal, execution_time, gap_percentage, final_time, max_trips
 
 
 """
@@ -336,7 +340,7 @@ runs_count = num_seeds*len(num_nodes)*len(pesticide_max_node_list)*len(Refill_ti
 
 
 # Create an empty DataFrame
-results_df = pd.DataFrame(columns=['Nodes', 'Pesticide_Max_Node', 'Refill_time', 'Max_num_drones' , 'Seed', 'Total_time', 'Max_trips', 'Value', 'Gap', 'Time'])
+results_df = pd.DataFrame(columns=['Nodes', 'Pesticide_Max_Node', 'Refill_time', 'Max_num_drones' , 'Seed', 'Total_time', 'Max_trips', 'Cost', 'Gap', 'Time'])
 
 counter = 0
 for nodes in num_nodes:
@@ -352,12 +356,12 @@ for nodes in num_nodes:
                     print('  Maximum number of drones: '+str(max_num_drone))
                     print('                    Seed #: '+str(seed)+'\n\n')
                     
-                    value, execution_time, gap_percentage, Total_time, max_trips = main(seed=seed, Nodes=nodes, pesticide_max_node=pesticide_max_node, refill_time = refill_time, max_num_drone=max_num_drone)
-                    print('Value is:', value)
+                    cost, execution_time, gap_percentage, Total_time, max_trips = main(seed=seed, Nodes=nodes, pesticide_max_node=pesticide_max_node, refill_time = refill_time, max_num_drone=max_num_drone)
+                    print('Cost is:', cost)
 
                     counter += 1
                     results_df = results_df.append({'Nodes': nodes, 'Pesticide_Max_Node': pesticide_max_node,
-                                                    'Refill_time': refill_time, 'Max_num_drones': max_num_drone, 'Seed': seed, 'Total_time': Total_time, 'Max_trips': max_trips, 'Value': value, 'Gap': gap_percentage, 'Time': execution_time}, ignore_index=True)
+                                                    'Refill_time': refill_time, 'Max_num_drones': max_num_drone, 'Seed': seed, 'Total_time': Total_time, 'Max_trips': max_trips, 'Cost': cost, 'Gap': gap_percentage, 'Time': execution_time}, ignore_index=True)
                     
                     if counter % 20 == 0:
                         filename = f"results_{counter}.csv"
