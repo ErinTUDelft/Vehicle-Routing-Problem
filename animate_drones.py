@@ -115,8 +115,9 @@ def plot(trip_list, node_list, x_max, y_max, U_max):
                               dy-offset*dx/l,
                               color=clr, head_width = 15, length_includes_head = True)
         
-        name = 'trip_' + str(h) +'.png'
-        plt.savefig(name, dpi=500)
+        name = 'trip_' + str(h) +'.pdf'
+        plt.savefig(name, dpi=120, format='pdf', bbox_inches='tight')
+        #plt.savefig(name, dpi=500)
 
 def plotmap(node_list, x_max, y_max, U_max):
     N = len(node_list)
@@ -148,5 +149,6 @@ def plotmap(node_list, x_max, y_max, U_max):
     for n in range(1,N):
         ax.annotate(str(n), (node_list[n].coord[0]+3, node_list[n].coord[1]))            
 
-    name = 'map.png'
-    plt.savefig(name, dpi=500)
+    name = 'map.pdf'
+    plt.savefig(name, dpi=120, format='pdf', bbox_inches='tight')
+    #plt.savefig(name, dpi=500)
