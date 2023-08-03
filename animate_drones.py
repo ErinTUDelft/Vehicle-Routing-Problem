@@ -81,7 +81,7 @@ def plot(trip_list, node_list, x_max, y_max, U_max):
     for n in range(1,N):
         Node_x.append(node_list[n].coord[0])
         Node_y.append(node_list[n].coord[1])
-        c.append(plt.cm.RdYlGn((255-node_list[n].urgency*(255/2)).astype(int)))
+        c.append(plt.cm.RdYlGn((255-node_list[n].urgency*(255/U_max)).astype(int)))
     
     for h in range(max_trips+1):
         fig = plt.figure(h)
@@ -117,3 +117,41 @@ def plot(trip_list, node_list, x_max, y_max, U_max):
         
         name = 'trip_' + str(h) +'.png'
         plt.savefig(name, dpi=500)
+
+def plotmap(node_list, x_max, y_max, U_max):
+    N = len(node_list)
+    Node_x = []
+    Node_y = []
+    
+    max_trips = 0
+    for i in range(len(trip_list)):
+        if trip_list[i].trip_n>max_trips:
+            max_trips = trip_list[i].trip_n
+    
+    s = []
+    c = []
+    for n in range(1,N):
+        Node_x.append(node_list[n].coord[0])
+        Node_y.append(node_list[n].coord[1])
+        c.append(plt.cm.RdYlGn((255-node_list[n].urgency*(255/U_max)).astype(int)))
+        s.append(np.multiply(node_list[n].required_pesticide,100))
+    
+    fig = plt.figure(h)
+    ax = fig.gca()
+    ax.clear()
+    # Setting Axes Limits
+    ax.set_xlim(0, x_max)
+    ax.set_ylim(0, y_max)
+
+    # Adding Figure Labels
+    ax.set_xlabel('x')
+    ax.set_ylabel('y')
+
+    # Plotting the nodes
+    ax.plot(node_list[0].coord[0], node_list[0].coord[1], 'ro')
+    ax.scatter(Node_x, Node_y, s, color = c)
+    for n in range(1,N):
+        ax.annotate(str(n), (node_list[n].coord[0]+3, node_list[n].coord[1]))            
+
+    name = 'map_' + str(h) +'.png'
+    plt.savefig(name, dpi=500)

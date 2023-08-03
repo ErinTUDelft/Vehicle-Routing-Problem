@@ -343,6 +343,14 @@ pesticide_max_node_list = [8,10,12,14]
 Refill_time_list = [30, 60, 90]
 max_num_drone_list = [3,4,5]
 
+num_seeds = 5
+num_nodes = 7
+pesticide_max_node_list = 8
+#pesticide_max_drone_list = [5,7,9]
+Refill_time_list = 30
+max_num_drone_list = 5
+
+
 
 # Create an empty DataFrame
 results_df = pd.DataFrame(columns=['Nodes', 'Pesticide_Max_Node', 'Refill_time', 'Max_num_drones' , 'Seed', 'Value', 'Gap', 'Time'])
