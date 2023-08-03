@@ -336,7 +336,7 @@ runs_count = num_seeds*len(num_nodes)*len(pesticide_max_node_list)*len(Refill_ti
 
 
 # Create an empty DataFrame
-results_df = pd.DataFrame(columns=['Nodes', 'Pesticide_Max_Node', 'Refill_time', 'Max_num_drones' , 'Seed', 'Total_time','Value', 'Gap', 'Time'])
+results_df = pd.DataFrame(columns=['Nodes', 'Pesticide_Max_Node', 'Refill_time', 'Max_num_drones' , 'Seed', 'Total_time', 'Max_trips', 'Value', 'Gap', 'Time'])
 
 counter = 0
 for nodes in num_nodes:
