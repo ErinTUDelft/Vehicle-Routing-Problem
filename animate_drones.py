@@ -123,20 +123,15 @@ def plotmap(node_list, x_max, y_max, U_max):
     Node_x = []
     Node_y = []
     
-    max_trips = 0
-    for i in range(len(trip_list)):
-        if trip_list[i].trip_n>max_trips:
-            max_trips = trip_list[i].trip_n
-    
     s = []
     c = []
     for n in range(1,N):
         Node_x.append(node_list[n].coord[0])
         Node_y.append(node_list[n].coord[1])
         c.append(plt.cm.RdYlGn((255-node_list[n].urgency*(255/U_max)).astype(int)))
-        s.append(np.multiply(node_list[n].required_pesticide,100))
+        s.append(np.multiply(node_list[n].rp[1],100))
     
-    fig = plt.figure(h)
+    fig = plt.figure()
     ax = fig.gca()
     ax.clear()
     # Setting Axes Limits
@@ -153,5 +148,5 @@ def plotmap(node_list, x_max, y_max, U_max):
     for n in range(1,N):
         ax.annotate(str(n), (node_list[n].coord[0]+3, node_list[n].coord[1]))            
 
-    name = 'map_' + str(h) +'.png'
+    name = 'map.png'
     plt.savefig(name, dpi=500)

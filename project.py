@@ -12,8 +12,6 @@ from scipy.spatial import distance_matrix
 import classes
 import pickle
 import os
-
-
 import pandas as pd
 
 
@@ -46,29 +44,19 @@ def main(seed, Nodes, pesticide_max_node, refill_time, max_num_drone):
     U_max = 2 #maximum urgency weighting factor
     flight_speed = 6    # drone flight speed in [m/s]
     drop_rate = 0.1     # rate of pesticide spraying in [l/s]
-    #refill_time = 30    # time it takes for a drone to fill up its tank [s]
 
     """
     Consider removing
     """
     flight_time = 1200  # maximum drone flight time [s]
 
-
-    N = 4  # number of nodes, define grid search per number of nodes
-    # Grid search
-    rp_min = 5 #,2,4,4  # minimum amount of pesticide per node [l]
-    rp_max = 10 # maximum amount of pesticide per node [l]
-    p_max = 5   # maximum amount of pesticide a drone can carry (tank_capacity) [l]
-    k_max = 4   # maximum number of drones
-
     N = Nodes  # number of nodes, define grid search per number of nodes
     # Grid search
-    rp_min = 5 #,2,4,4  # minimum amount of pesticide per node [l]
+    rp_min = 4                  # minimum amount of pesticide per node [l]
     rp_max = pesticide_max_node # maximum amount of pesticide per node [l]
-    p_max = 7   # maximum amount of pesticide a drone can carry (tank_capacity) [l]
-    k_max = max_num_drone   # maximum number of drones
+    p_max  = 8                  # maximum amount of pesticide a drone can carry (tank_capacity) [l]
+    k_max  = max_num_drone      # maximum number of drones
     refill_time = refill_time
-
 
     M = flight_time*3
 
@@ -76,16 +64,18 @@ def main(seed, Nodes, pesticide_max_node, refill_time, max_num_drone):
 
     np.random.seed(seed)
     X_pos = np.random.uniform(low=0, high=x_max, size=(N,))
+    np.random.seed(seed+10)
     Y_pos = np.random.uniform(low=0, high=y_max, size=(N,))
     Node_coords = np.column_stack((X_pos,Y_pos))
 
     Node_coords[0] = [500,500]
     print(Node_coords)
 
-    
+    np.random.seed(seed+20)
     RP = np.random.uniform(low=rp_min, high=rp_max, size=(N,))
     RP[0] = 0
     RP_TOT = np.sum(RP)
+    np.random.seed(seed+30)
     U = np.random.uniform(low=U_min, high=U_max, size=(N,))
     U[0] = 0 #origin has no urgency
     h_max = np.ceil((RP_TOT/(p_max*k_max))).astype(int)   # maximum number of trips
@@ -93,12 +83,9 @@ def main(seed, Nodes, pesticide_max_node, refill_time, max_num_drone):
     d_matrix = distance_matrix(Node_coords, Node_coords)
     t = d_matrix/flight_speed
 
-
-
     #################
     ### VARIABLES ###
     #################
-
     x = {}
     p = {}
     arr = {}
@@ -110,26 +97,25 @@ def main(seed, Nodes, pesticide_max_node, refill_time, max_num_drone):
 
     T=model.addVar(lb=0, vtype=GRB.CONTINUOUS,name="T") # Total time
 
-
     for i in range(0,N):
         for j in range(0,N):
             for k in range(0,k_max):
                 for h in range(0,h_max):
-                    x[i,j,k,h]=model.addVar(lb=0, ub=1, vtype=GRB.BINARY,name="x[%s,%s,%s,%s]"%(i,j,k,h)) # does vehicle k travel from i to j in trip h
+                    x[i,j,k,h]=model.addVar(lb=0, ub=1, vtype=GRB.BINARY,name="x[%s,%s,%s,%s]"%(i,j,k,h))   # does vehicle k travel from i to j in trip h
 
     for i in range(0,N):
         for k in range(0,k_max):
             for h in range(0,h_max):
-                p[i,k,h]=model.addVar(lb=0, ub=p_max, vtype=GRB.CONTINUOUS,name="p[%s,%s,%s]"%(i,k,h)) # amount of pesticide drone k drops at node i in trip h
-                arr[i,k,h]=model.addVar(lb=0, vtype=GRB.CONTINUOUS,name="arr[%s,%s,%s]"%(i,k,h)) # arrival time of drone k at node i during trip h
-                dep[i,k,h]=model.addVar(lb=0, vtype=GRB.CONTINUOUS,name="dep[%s,%s,%s]"%(i,k,h)) # departure time of drone k from node i during trip h
+                p[i,k,h]=model.addVar(lb=0, ub=p_max, vtype=GRB.CONTINUOUS,name="p[%s,%s,%s]"%(i,k,h))  # amount of pesticide drone k drops at node i in trip h
+                arr[i,k,h]=model.addVar(lb=0, vtype=GRB.CONTINUOUS,name="arr[%s,%s,%s]"%(i,k,h))        # arrival time of drone k at node i during trip h
+                dep[i,k,h]=model.addVar(lb=0, vtype=GRB.CONTINUOUS,name="dep[%s,%s,%s]"%(i,k,h))        # departure time of drone k from node i during trip h
 
     for k in range(0,k_max):
         for h in range(0,h_max):
             a[k,h]=model.addVar(lb=0, ub=1, vtype=GRB.BINARY,name="a[%s,%s]"%(k,h)) # does drone k leave for trip h
 
     for i in range (1,N):
-        Tcomp[i] = model.addVar(lb=0, vtype=GRB.CONTINUOUS,name="Tcomp[%s]"%(i)) # Completion time of a node
+        Tcomp[i] = model.addVar(lb=0, vtype=GRB.CONTINUOUS,name="Tcomp[%s]"%(i))    # Completion time of a node
 
     model.update()
 
@@ -137,7 +123,7 @@ def main(seed, Nodes, pesticide_max_node, refill_time, max_num_drone):
     ### CONSTRAINTS ###
     ###################
 
-    # the demand of pesticide at each node needs to be satisfied
+    # The demand of pesticide at each node needs to be satisfied
     for i in range(1,N):
         LHS = LinExpr()
         for k in range(0,k_max):
@@ -241,8 +227,7 @@ def main(seed, Nodes, pesticide_max_node, refill_time, max_num_drone):
     for k in range(0,k_max):
         model.addConstr(T - arr[0,k,h_max-1] >= 0, name='Total_time_greater_than_final_time_of_drone'+str(k))
 
-
-    #get the time at which a node i is satisfied
+    # get the time at which a node i is satisfied
     for i in range (1,N):
         for h in range(h_max):
             for k in range(k_max):
@@ -250,7 +235,6 @@ def main(seed, Nodes, pesticide_max_node, refill_time, max_num_drone):
 
     model.update()
     
-
     #####################
     ### COST FUNCTION ###
     #####################
@@ -258,13 +242,13 @@ def main(seed, Nodes, pesticide_max_node, refill_time, max_num_drone):
     for k in range(0,k_max):
         # for h in range(0,h_max):
         #     obj += arr[0,k,h]-dep[0,k,h]
-        obj += arr[0,k,h_max-1]
+        obj += 0.01*arr[0,k,h_max-1]/k_max
 
     #minimize completion time of node [i], with its urgency U[i] as weighting factor
     for i in range(1,N):
-        obj += U[i] * Tcomp[i] 
+        obj += U[i] * Tcomp[i]
         
-    obj += T
+    #obj += T
 
     model.setObjective(obj,GRB.MINIMIZE)
     model.update()
@@ -297,6 +281,7 @@ def main(seed, Nodes, pesticide_max_node, refill_time, max_num_drone):
         node_list.append(classes.Node(n,Node_coords[n,:],RP[n],U[n]))
 
     k=0
+    max_trips = 0
     trip_list = []
     for k in range(0,k_max):
         h=0
@@ -304,6 +289,8 @@ def main(seed, Nodes, pesticide_max_node, refill_time, max_num_drone):
         loop = True
         while loop:
             if h == h_max or a[k,h].x < 0.1:
+                if h>max_trips:
+                    max_trips = h
                 break
             if i==0:
                 trip_list.append(classes.Trip(k,h))
@@ -330,30 +317,26 @@ def main(seed, Nodes, pesticide_max_node, refill_time, max_num_drone):
     with open(PATH, 'wb') as f:
         pickle.dump(trip_list, f)
         
-    return model.objVal, execution_time, gap_percentage
+    
+        
+    return model.objVal, execution_time, gap_percentage, T.x, max_trips
 
 
 """
 You can change these if you want!
 """
 num_seeds = 5
-num_nodes = [4,5,6,7]
-pesticide_max_node_list = [8,10,12,14]
-#pesticide_max_drone_list = [5,7,9]
+num_nodes = [4,5,6]
+pesticide_max_node_list = [10,12,14]
 Refill_time_list = [30, 60, 90]
-max_num_drone_list = [3,4,5]
+max_num_drone_list = [2,3,4]
 
-num_seeds = 5
-num_nodes = 7
-pesticide_max_node_list = 8
-#pesticide_max_drone_list = [5,7,9]
-Refill_time_list = 30
-max_num_drone_list = 5
-
+grid_search_start_time = time.time()
+runs_count = num_seeds*len(num_nodes)*len(pesticide_max_node_list)*len(Refill_time_list)*len(max_num_drone_list)
 
 
 # Create an empty DataFrame
-results_df = pd.DataFrame(columns=['Nodes', 'Pesticide_Max_Node', 'Refill_time', 'Max_num_drones' , 'Seed', 'Value', 'Gap', 'Time'])
+results_df = pd.DataFrame(columns=['Nodes', 'Pesticide_Max_Node', 'Refill_time', 'Max_num_drones' , 'Seed', 'Total_time','Value', 'Gap', 'Time'])
 
 counter = 0
 for nodes in num_nodes:
@@ -361,21 +344,29 @@ for nodes in num_nodes:
         for refill_time in Refill_time_list:
             for max_num_drone in max_num_drone_list:
                 for seed in range(num_seeds):
-                    value, execution_time, gap_percentage = main(seed=seed, Nodes=nodes, pesticide_max_node=pesticide_max_node, refill_time = refill_time, max_num_drone=max_num_drone)
+                    elapsed_time = time.time()-grid_search_start_time
+                    print('run '+str(counter+1)+' out of '+str(runs_count)+', elapsed time '+str(elapsed_time)+'s')
+                    print('           Number of nodes: '+str(nodes))
+                    print('Maximum pesticide per node: '+str(pesticide_max_node))
+                    print('               Refill time: '+str(refill_time))
+                    print('  Maximum number of drones: '+str(max_num_drone))
+                    print('                    Seed #: '+str(seed))
+                    
+                    value, execution_time, gap_percentage, Total_time, max_trips = main(seed=seed, Nodes=nodes, pesticide_max_node=pesticide_max_node, refill_time = refill_time, max_num_drone=max_num_drone)
                     print('Value is:', value)
 
                     counter += 1
-                    
                     results_df = results_df.append({'Nodes': nodes, 'Pesticide_Max_Node': pesticide_max_node,
-                                                    'Refill_time': refill_time, 'Max_num_drones': max_num_drone, 'Seed': seed, 'Value': value, 'Gap': gap_percentage, 'Time': execution_time}, ignore_index=True)
+                                                    'Refill_time': refill_time, 'Max_num_drones': max_num_drone, 'Seed': seed, 'Total_time': Total_time, 'Max_trips': max_trips, 'Value': value, 'Gap': gap_percentage, 'Time': execution_time}, ignore_index=True)
                     
                     if counter % 20 == 0:
                         filename = f"results_{counter}.csv"
                         results_df.to_csv(filename, index=False)
-
-# Display the results DataFrameprint(results_df
-                print(results_df)
+                    
+                
 print('Dataframe Final:' , results_df)
+filename = f"results_final.csv"
+results_df.to_csv(filename, index=False)
 
 
 solution = []
