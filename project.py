@@ -345,12 +345,12 @@ for nodes in num_nodes:
             for max_num_drone in max_num_drone_list:
                 for seed in range(num_seeds):
                     elapsed_time = time.time()-grid_search_start_time
-                    print('run '+str(counter+1)+' out of '+str(runs_count)+', elapsed time '+str(elapsed_time)+'s')
+                    print('\n\nrun '+str(counter+1)+' out of '+str(runs_count)+', elapsed time '+str(elapsed_time)+'s')
                     print('           Number of nodes: '+str(nodes))
                     print('Maximum pesticide per node: '+str(pesticide_max_node))
                     print('               Refill time: '+str(refill_time))
                     print('  Maximum number of drones: '+str(max_num_drone))
-                    print('                    Seed #: '+str(seed))
+                    print('                    Seed #: '+str(seed)+'\n\n')
                     
                     value, execution_time, gap_percentage, Total_time, max_trips = main(seed=seed, Nodes=nodes, pesticide_max_node=pesticide_max_node, refill_time = refill_time, max_num_drone=max_num_drone)
                     print('Value is:', value)
