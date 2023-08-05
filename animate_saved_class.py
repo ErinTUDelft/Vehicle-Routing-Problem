@@ -8,10 +8,10 @@ x_max = 1000 # width of the field
 y_max = 1000 # length of the field
 
 seed = 2
-nodes = 6
-pesticide_max_node = 10
-refill_time = 30
-max_num_drone = 2
+nodes = 5
+pesticide_max_node = 12
+refill_time = 60
+max_num_drone = 3
 
 PATH = os.getcwd()
 PATH += '\\Saved_solutions\\node_list'
@@ -48,5 +48,5 @@ print('generating map')
 animate_drones.plotmap(node_list, x_max, y_max, 2)
 print('generating plots')
 animate_drones.plot(trip_list, node_list, x_max, y_max, 2)
-#print('generating gif')
-#animate_drones.animate(trip_list, steps, node_list, x_max, y_max, 2)
+print('generating gif')
+animate_drones.animate(trip_list, steps, node_list, x_max, y_max, 2)

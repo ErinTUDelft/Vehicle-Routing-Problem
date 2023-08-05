@@ -21,6 +21,7 @@ def animate (trip_list, steps, node_list, x_max, y_max, U_max):
         
     def animate_func(num):
         ax.clear()  # Clears the figure to update the line, point, title, and axes
+        ax.set_aspect('equal', 'box')
         s = []
         # Plotting the nodes
         ax.plot(node_list[0].coord[0], node_list[0].coord[1], 'ro')
@@ -87,6 +88,7 @@ def plot(trip_list, node_list, x_max, y_max, U_max):
         fig = plt.figure(h)
         ax = fig.gca()
         ax.clear()
+        ax.set_aspect('equal', 'box')
         # Setting Axes Limits
         ax.set_xlim(0, x_max)
         ax.set_ylim(0, y_max)
@@ -101,18 +103,19 @@ def plot(trip_list, node_list, x_max, y_max, U_max):
         for n in range(1,N):
             ax.annotate(str(n), (node_list[n].coord[0]+3, node_list[n].coord[1]))            
 
-        for i in range(len(trip_list)):
+        for i in range(len(trip_list)-1,0-1,-1):
             if trip_list[i].trip_n==h:
                 clr = plt.cm.tab20(trip_list[i].drone)
-                offset = 2+np.random.uniform(low=0, high=3)
+                #offset = 2+np.random.uniform(low=0, high=3)
+                offset = 3+3*trip_list[i].drone
                 for k in range(0, len(trip_list[i].node_X)-1, 2):
                     dx = trip_list[i].node_X[k+1]-trip_list[i].node_X[k]
                     dy = trip_list[i].node_Y[k+1]-trip_list[i].node_Y[k]
                     l = np.sqrt(pow(dx, 2)+pow(dy, 2))
                     plt.arrow(trip_list[i].node_X[k]+offset*dy/l,
                               trip_list[i].node_Y[k]-offset*dx/l,
-                              dx+offset*dy/l,
-                              dy-offset*dx/l,
+                              dx,
+                              dy,
                               color=clr, head_width = 15, length_includes_head = True)
         
         name = 'trip_' + str(h) +'.pdf'
@@ -135,6 +138,7 @@ def plotmap(node_list, x_max, y_max, U_max):
     fig = plt.figure()
     ax = fig.gca()
     ax.clear()
+    ax.set_aspect('equal', 'box')
     # Setting Axes Limits
     ax.set_xlim(0, x_max)
     ax.set_ylim(0, y_max)
