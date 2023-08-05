@@ -41,7 +41,7 @@ def animate (trip_list, steps, node_list, x_max, y_max, U_max):
                 ax.scatter(trace[0, num], trace[1, num], color=clr, marker='o')
                 
                 # plotting drone name
-                ax.annotate(f'D{trip_list[i].drone}-T{trip_list[i].trip_n}', (trace[0, num]+3, trace[1, num]-10))
+                ax.annotate(f'D{trip_list[i].drone+1}-T{trip_list[i].trip_n+1}', (trace[0, num]+3, trace[1, num]-10))
                 
                 # plotting drone trace
                 ax.plot(trace[0, :num+1], trace[1, :num+1], color=clr)
