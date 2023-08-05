@@ -70,6 +70,7 @@ class Node:
         self.t = []
         
     def add_drop(self,p, arr, dep, max_drop_rate):
+        dr = 0
         if arr != dep:
             dr = min(p/(dep-arr),max_drop_rate)
             
