@@ -6,6 +6,7 @@ import animate_drones
 
 x_max = 1000 # width of the field
 y_max = 1000 # length of the field
+U_max = 2
 
 seed = 2
 nodes = 5
@@ -13,18 +14,13 @@ pesticide_max_node = 12
 refill_time = 60
 max_num_drone = 3
 
-PATH = os.getcwd()
-PATH += '\\Saved_solutions\\node_list'
-PATH += '_seed' + str(seed) + '_nodes' + str(nodes) + '_maxpest' + str(pesticide_max_node) + '_reft' + str(refill_time) + '_maxd' + str(max_num_drone)
-PATH += '.pkl'
-with open(PATH, 'rb') as file:
-    node_list = pickle.load(file)
+path = os.getcwd()+'\\Saved_solutions\\'
+filecode = ('_seed{0}_nodes{1}_maxpest{2}_reft{3}_maxd{4}.pkl'
+            .format(seed,nodes,pesticide_max_node,refill_time,max_num_drone))
 
-PATH = os.getcwd()
-PATH += '\\Saved_solutions\\trip_list'
-PATH += '_seed' + str(seed) + '_nodes' + str(nodes) + '_maxpest' + str(pesticide_max_node) + '_reft' + str(refill_time) + '_maxd' + str(max_num_drone)
-PATH += '.pkl'          
-with open(PATH, 'rb') as file:
+with open(path+'node_list'+filecode, 'rb') as file:
+    node_list = pickle.load(file)
+with open(path+'trip_list'+filecode, 'rb') as file:
     trip_list = pickle.load(file)
     
 steps = 200
@@ -45,8 +41,8 @@ for i in range(len(trip_list)):
     # trip_list[i].print_trip()
 
 print('generating map')
-animate_drones.plotmap(node_list, x_max, y_max, 2)
+animate_drones.plotmap(node_list, x_max, y_max, U_max)
 print('generating plots')
-animate_drones.plot(trip_list, node_list, x_max, y_max, 2)
+animate_drones.plot(trip_list, node_list, x_max, y_max, U_max)
 print('generating gif')
-animate_drones.animate(trip_list, steps, node_list, x_max, y_max, 2)
+#animate_drones.animate(trip_list, steps, node_list, x_max, y_max, U_max)
