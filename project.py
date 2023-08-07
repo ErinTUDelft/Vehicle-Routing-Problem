@@ -68,8 +68,7 @@ def main(seed, Nodes, pesticide_max_node, refill_time, max_num_drone):
     Y_pos = np.random.uniform(low=0, high=y_max, size=(N,))
     Node_coords = np.column_stack((X_pos,Y_pos))
 
-    Node_coords[0] = [500,500]
-    print(Node_coords)
+    Node_coords[0] = [500,500]   
 
     np.random.seed(seed+20)
     RP = np.random.uniform(low=rp_min, high=rp_max, size=(N,))
@@ -78,10 +77,16 @@ def main(seed, Nodes, pesticide_max_node, refill_time, max_num_drone):
     np.random.seed(seed+30)
     U = np.random.uniform(low=U_min, high=U_max, size=(N,))
     U[0] = 0 #origin has no urgency
-    h_max = np.ceil((RP_TOT/(p_max*k_max))).astype(int)   # maximum number of trips
-
+    
+    print(Node_coords)
+    
+    
+    h_max = np.ceil((RP_TOT/(p_max*k_max))).astype(int)   # maximum number of trips 
     d_matrix = distance_matrix(Node_coords, Node_coords)
     t = d_matrix/flight_speed
+    
+    
+    
 
     #################
     ### VARIABLES ###
@@ -307,22 +312,15 @@ def main(seed, Nodes, pesticide_max_node, refill_time, max_num_drone):
                         h += 1
                         break
     
-    PATH = os.getcwd()
-    PATH += '\\Saved_solutions\\node_list'
-    PATH += '_seed' + str(seed) + '_nodes' + str(Nodes) + '_maxpest' + str(pesticide_max_node) + '_reft' + str(refill_time) + '_maxd' + str(max_num_drone)
-    PATH += '.pkl'
-    with open(PATH, 'wb') as f:
-        pickle.dump(node_list, f)
-        
-    PATH = os.getcwd()
-    PATH += '\\Saved_solutions\\trip_list'
-    PATH += '_seed' + str(seed) + '_nodes' + str(Nodes) + '_maxpest' + str(pesticide_max_node) + '_reft' + str(refill_time) + '_maxd' + str(max_num_drone)
-    PATH += '.pkl'
-    with open(PATH, 'wb') as f:
-        pickle.dump(trip_list, f)
-        
+    path = os.getcwd()+'\\Saved_solutions\\'
+    filecode = ('_seed{0}_nodes{1}_maxpest{2}_reft{3}_maxd{4}.pkl'
+             .format(seed,Nodes,pesticide_max_node,refill_time,max_num_drone))
     
-        
+    with open(path+'node_list'+filecode, 'wb') as file:
+        pickle.dump(node_list, file)
+    with open(path+'trip_list'+filecode, 'wb') as file:
+        pickle.dump(trip_list, file)
+    
     return model.objVal, execution_time, gap_percentage, final_time, max_trips
 
 
@@ -349,12 +347,12 @@ for nodes in num_nodes:
             for max_num_drone in max_num_drone_list:
                 for seed in range(num_seeds):
                     elapsed_time = time.time()-grid_search_start_time
-                    print('\n\nrun '+str(counter+1)+' out of '+str(runs_count)+', elapsed time '+str(elapsed_time)+'s')
-                    print('           Number of nodes: '+str(nodes))
-                    print('Maximum pesticide per node: '+str(pesticide_max_node))
-                    print('               Refill time: '+str(refill_time))
-                    print('  Maximum number of drones: '+str(max_num_drone))
-                    print('                    Seed #: '+str(seed)+'\n\n')
+                    print('\n\nrun {0} out of {1}, elapsed time {2}s'.format(counter+1,runs_count,elapsed_time))
+                    print('           Number of nodes: {0}'.format(nodes))
+                    print('Maximum pesticide per node: {0}'.format(pesticide_max_node))
+                    print('               Refill time: {0}'.format(refill_time))
+                    print('  Maximum number of drones: {0}'.format(max_num_drone))
+                    print('                    Seed #: {0}'.format(seed)+'\n\n')
                     
                     cost, execution_time, gap_percentage, Total_time, max_trips = main(seed=seed, Nodes=nodes, pesticide_max_node=pesticide_max_node, refill_time = refill_time, max_num_drone=max_num_drone)
                     print('Cost is:', cost)
@@ -369,7 +367,7 @@ for nodes in num_nodes:
                     
                 
 print('Dataframe Final:' , results_df)
-filename = f"results_final.csv"
+filename = "results_final.csv"
 results_df.to_csv(filename, index=False)
 
 
